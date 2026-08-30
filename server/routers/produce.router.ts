@@ -1,4 +1,9 @@
-import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import {
+  adminProcedure,
+  protectedProcedure,
+  publicProcedure,
+  router,
+} from "../_core/trpc";
 import {
   createOrUpdateBusinessBuyerProfile,
   createProduceListing,
@@ -27,14 +32,24 @@ import { storagePut } from "../storage";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 
-export const businessBuyerStatusSchema = z.enum(["approved", "rejected", "suspended"]);
-export const produceListingStatusSchema = z.enum(["draft", "published", "paused", "sold_out", "archived"]);
+export const businessBuyerStatusSchema = z.enum([
+  "approved",
+  "rejected",
+  "suspended",
+]);
+export const produceListingStatusSchema = z.enum([
+  "draft",
+  "published",
+  "paused",
+  "sold_out",
+  "archived",
+]);
 
 export const storedAssetUrlSchema = z
   .string()
   .trim()
   .refine(
-    (value) => value.startsWith("/manus-storage/") || /^https?:\/\//i.test(value),
+    value => value.startsWith("/storage/") || /^https?:\/\//i.test(value),
     "رابط الملف غير صالح"
   );
 
@@ -104,7 +119,7 @@ export const produceMarketplaceRouter = router({
       enabled,
       isApprovedBuyer,
       buyerProfileStatus: buyerProfile?.status ?? null,
-      listings: listings.map((listing) => ({
+      listings: listings.map(listing => ({
         ...listing,
         wholesalePrice:
           isApprovedBuyer && listing.priceMode === "visible_to_b2b"
@@ -207,9 +222,7 @@ export const produceMarketplaceRouter = router({
         input.requestedQuantity < listing.minOrderQuantity ||
         input.requestedQuantity > listing.availableQuantity
       )
-        throw new Error(
-          "الكمية المطلوبة يجب أن تكون ضمن الحد المتاح للعرض"
-        );
+        throw new Error("الكمية المطلوبة يجب أن تكون ضمن الحد المتاح للعرض");
       const request = await createProduceQuoteRequest({
         id: `pqr_${nanoid(16)}`,
         listingId: listing.id,
@@ -242,7 +255,11 @@ export const produceMarketplaceRouter = router({
     .input(z.object({ quoteRequestId: z.string().min(1).max(64) }))
     .query(async ({ ctx, input }) => {
       const quoteRequest = await getProduceQuoteRequest(input.quoteRequestId);
-      if (!quoteRequest || (quoteRequest.farmerId !== ctx.user.id && quoteRequest.buyerId !== ctx.user.id))
+      if (
+        !quoteRequest ||
+        (quoteRequest.farmerId !== ctx.user.id &&
+          quoteRequest.buyerId !== ctx.user.id)
+      )
         throw new Error("لا تملك صلاحية الاطلاع على هذه المفاوضة");
       return listProduceQuoteMessages(input.quoteRequestId);
     }),
@@ -250,7 +267,11 @@ export const produceMarketplaceRouter = router({
     .input(z.object({ quoteRequestId: z.string().min(1).max(64) }))
     .mutation(async ({ ctx, input }) => {
       const quoteRequest = await getProduceQuoteRequest(input.quoteRequestId);
-      if (!quoteRequest || (quoteRequest.farmerId !== ctx.user.id && quoteRequest.buyerId !== ctx.user.id))
+      if (
+        !quoteRequest ||
+        (quoteRequest.farmerId !== ctx.user.id &&
+          quoteRequest.buyerId !== ctx.user.id)
+      )
         throw new Error("لا تملك صلاحية تحديث هذه المحادثة");
       return markProduceQuoteMessagesRead(input.quoteRequestId, ctx.user.id);
     }),
@@ -272,7 +293,11 @@ export const produceMarketplaceRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const quoteRequest = await getProduceQuoteRequest(input.quoteRequestId);
-      if (!quoteRequest || (quoteRequest.farmerId !== ctx.user.id && quoteRequest.buyerId !== ctx.user.id))
+      if (
+        !quoteRequest ||
+        (quoteRequest.farmerId !== ctx.user.id &&
+          quoteRequest.buyerId !== ctx.user.id)
+      )
         throw new Error("لا تملك صلاحية الرد على هذه المفاوضة");
       if (
         quoteRequest.status === "accepted" ||
@@ -328,8 +353,8 @@ export const produceMarketplaceRouter = router({
         input.status === "accepted"
           ? "تم الاتفاق"
           : input.status === "rejected"
-          ? "تم رفض الطلب"
-          : "تم إلغاء الطلب";
+            ? "تم رفض الطلب"
+            : "تم إلغاء الطلب";
       await createProduceQuoteNotification({
         id: `pqn_${nanoid(16)}`,
         quoteRequestId: input.quoteRequestId,
@@ -356,8 +381,8 @@ export const produceMarketplaceRouter = router({
         match[1] === "image/png"
           ? "png"
           : match[1] === "image/webp"
-          ? "webp"
-          : "jpg";
+            ? "webp"
+            : "jpg";
       return storagePut(
         `produce/listings/${ctx.user.id}/${nanoid(14)}.${extension}`,
         bytes,
@@ -379,10 +404,10 @@ export const produceMarketplaceRouter = router({
         match[1] === "application/pdf"
           ? "pdf"
           : match[1] === "image/png"
-          ? "png"
-          : match[1] === "image/webp"
-          ? "webp"
-          : "jpg";
+            ? "png"
+            : match[1] === "image/webp"
+              ? "webp"
+              : "jpg";
       const stored = await storagePut(
         `produce/certificates/${ctx.user.id}/${nanoid(14)}.${extension}`,
         bytes,

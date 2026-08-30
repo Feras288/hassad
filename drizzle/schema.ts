@@ -1,4 +1,13 @@
-import { boolean, int, json, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import {
+  boolean,
+  int,
+  json,
+  mysqlEnum,
+  mysqlTable,
+  text,
+  timestamp,
+  varchar,
+} from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -11,15 +20,19 @@ export const users = mysqlTable("users", {
    * Use this for relations between tables.
    */
   id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
+  /** External OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin", "vendor"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "vendor"])
+    .default("user")
+    .notNull(),
   /** Links an authenticated supplier account to the vendorId used in the live catalog. */
   vendorId: varchar("vendorId", { length: 64 }),
-  preferredLanguage: mysqlEnum("preferredLanguage", ["ar", "en"]).notNull().default("ar"),
+  preferredLanguage: mysqlEnum("preferredLanguage", ["ar", "en"])
+    .notNull()
+    .default("ar"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -39,13 +52,19 @@ export type InsertUser = typeof users.$inferInsert;
 export const businessBuyerProfiles = mysqlTable("business_buyer_profiles", {
   id: varchar("id", { length: 64 }).primaryKey(),
   userId: int("userId").notNull().unique(),
-  businessType: mysqlEnum("businessType", ["company", "trader", "restaurant"]).notNull(),
+  businessType: mysqlEnum("businessType", [
+    "company",
+    "trader",
+    "restaurant",
+  ]).notNull(),
   businessName: varchar("businessName", { length: 255 }).notNull(),
   contactName: varchar("contactName", { length: 160 }).notNull(),
   phone: varchar("phone", { length: 32 }).notNull(),
   crNumber: varchar("crNumber", { length: 120 }),
   vatNumber: varchar("vatNumber", { length: 120 }),
-  status: mysqlEnum("status", ["pending", "approved", "rejected", "suspended"]).notNull().default("pending"),
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "suspended"])
+    .notNull()
+    .default("pending"),
   reviewedBy: int("reviewedBy"),
   reviewedAt: timestamp("reviewedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -53,7 +72,8 @@ export const businessBuyerProfiles = mysqlTable("business_buyer_profiles", {
 });
 
 export type BusinessBuyerProfile = typeof businessBuyerProfiles.$inferSelect;
-export type InsertBusinessBuyerProfile = typeof businessBuyerProfiles.$inferInsert;
+export type InsertBusinessBuyerProfile =
+  typeof businessBuyerProfiles.$inferInsert;
 
 /** Farmer-owned crop offers for the B2B produce marketplace. */
 export const produceListings = mysqlTable("produce_listings", {
@@ -68,12 +88,24 @@ export const produceListings = mysqlTable("produce_listings", {
   availableQuantity: int("availableQuantity").notNull(),
   unit: varchar("unit", { length: 48 }).notNull().default("كجم"),
   minOrderQuantity: int("minOrderQuantity").notNull().default(1),
-  priceMode: mysqlEnum("priceMode", ["request_quote", "visible_to_b2b"]).notNull().default("request_quote"),
+  priceMode: mysqlEnum("priceMode", ["request_quote", "visible_to_b2b"])
+    .notNull()
+    .default("request_quote"),
   wholesalePrice: int("wholesalePrice"),
   description: text("description"),
   images: json("images").$type<string[]>().notNull(),
-  qualityCertificates: json("qualityCertificates").$type<Array<{ name: string; url: string }>>(),
-  status: mysqlEnum("status", ["draft", "published", "paused", "sold_out", "archived"]).notNull().default("draft"),
+  qualityCertificates: json("qualityCertificates").$type<
+    Array<{ name: string; url: string }>
+  >(),
+  status: mysqlEnum("status", [
+    "draft",
+    "published",
+    "paused",
+    "sold_out",
+    "archived",
+  ])
+    .notNull()
+    .default("draft"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -88,13 +120,22 @@ export const produceQuoteRequests = mysqlTable("produce_quote_requests", {
   buyerId: int("buyerId").notNull(),
   requestedQuantity: int("requestedQuantity").notNull(),
   message: text("message").notNull(),
-  status: mysqlEnum("status", ["new", "negotiating", "accepted", "rejected", "cancelled"]).notNull().default("new"),
+  status: mysqlEnum("status", [
+    "new",
+    "negotiating",
+    "accepted",
+    "rejected",
+    "cancelled",
+  ])
+    .notNull()
+    .default("new"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type ProduceQuoteRequest = typeof produceQuoteRequests.$inferSelect;
-export type InsertProduceQuoteRequest = typeof produceQuoteRequests.$inferInsert;
+export type InsertProduceQuoteRequest =
+  typeof produceQuoteRequests.$inferInsert;
 
 /** Conversation and optional price proposals scoped to one wholesale quote request. */
 export const produceQuoteMessages = mysqlTable("produce_quote_messages", {
@@ -108,24 +149,34 @@ export const produceQuoteMessages = mysqlTable("produce_quote_messages", {
 });
 
 export type ProduceQuoteMessage = typeof produceQuoteMessages.$inferSelect;
-export type InsertProduceQuoteMessage = typeof produceQuoteMessages.$inferInsert;
+export type InsertProduceQuoteMessage =
+  typeof produceQuoteMessages.$inferInsert;
 
 /** In-app alerts for the parties of a wholesale quotation; only the recipient can read them. */
-export const produceQuoteNotifications = mysqlTable("produce_quote_notifications", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  quoteRequestId: varchar("quoteRequestId", { length: 64 }).notNull(),
-  recipientId: int("recipientId").notNull(),
-  actorId: int("actorId").notNull(),
-  type: mysqlEnum("type", ["status_change", "new_message", "new_request"]).notNull(),
-  title: varchar("title", { length: 255 }).notNull(),
-  message: text("message").notNull(),
-  isRead: boolean("isRead").notNull().default(false),
-  readAt: timestamp("readAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const produceQuoteNotifications = mysqlTable(
+  "produce_quote_notifications",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    quoteRequestId: varchar("quoteRequestId", { length: 64 }).notNull(),
+    recipientId: int("recipientId").notNull(),
+    actorId: int("actorId").notNull(),
+    type: mysqlEnum("type", [
+      "status_change",
+      "new_message",
+      "new_request",
+    ]).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    message: text("message").notNull(),
+    isRead: boolean("isRead").notNull().default(false),
+    readAt: timestamp("readAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  }
+);
 
-export type ProduceQuoteNotification = typeof produceQuoteNotifications.$inferSelect;
-export type InsertProduceQuoteNotification = typeof produceQuoteNotifications.$inferInsert;
+export type ProduceQuoteNotification =
+  typeof produceQuoteNotifications.$inferSelect;
+export type InsertProduceQuoteNotification =
+  typeof produceQuoteNotifications.$inferInsert;
 
 /** Customer appointments with agricultural service providers. Provider IDs match public provider profile IDs. */
 export const serviceBookings = mysqlTable("service_bookings", {
@@ -146,8 +197,18 @@ export const serviceBookings = mysqlTable("service_bookings", {
   notes: text("notes"),
   contactName: varchar("contactName", { length: 160 }).notNull(),
   contactPhone: varchar("contactPhone", { length: 32 }).notNull(),
-  paymentMethod: mysqlEnum("paymentMethod", ["card", "transfer", "cash"]).notNull().default("cash"),
-  status: mysqlEnum("status", ["requested", "confirmed", "completed", "cancelled", "declined"]).notNull().default("requested"),
+  paymentMethod: mysqlEnum("paymentMethod", ["card", "transfer", "cash"])
+    .notNull()
+    .default("cash"),
+  status: mysqlEnum("status", [
+    "requested",
+    "confirmed",
+    "completed",
+    "cancelled",
+    "declined",
+  ])
+    .notNull()
+    .default("requested"),
   providerNote: text("providerNote"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -169,28 +230,38 @@ export const serviceConversations = mysqlTable("service_conversations", {
 });
 
 export type ServiceConversation = typeof serviceConversations.$inferSelect;
-export type InsertServiceConversation = typeof serviceConversations.$inferInsert;
+export type InsertServiceConversation =
+  typeof serviceConversations.$inferInsert;
 
 /** Text messages within a direct customer-provider conversation. */
-export const serviceConversationMessages = mysqlTable("service_conversation_messages", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  conversationId: varchar("conversationId", { length: 64 }).notNull(),
-  senderId: int("senderId").notNull(),
-  message: text("message").notNull(),
-  readAt: timestamp("readAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const serviceConversationMessages = mysqlTable(
+  "service_conversation_messages",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    conversationId: varchar("conversationId", { length: 64 }).notNull(),
+    senderId: int("senderId").notNull(),
+    message: text("message").notNull(),
+    readAt: timestamp("readAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  }
+);
 
-export type ServiceConversationMessage = typeof serviceConversationMessages.$inferSelect;
-export type InsertServiceConversationMessage = typeof serviceConversationMessages.$inferInsert;
+export type ServiceConversationMessage =
+  typeof serviceConversationMessages.$inferSelect;
+export type InsertServiceConversationMessage =
+  typeof serviceConversationMessages.$inferInsert;
 
 /** Vendor profiles managed by administrators and referenced by catalog products. */
 export const adminVendorProfiles = mysqlTable("admin_vendor_profiles", {
   id: varchar("id", { length: 64 }).primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  type: mysqlEnum("type", ["supplier", "provider"]).notNull().default("supplier"),
+  type: mysqlEnum("type", ["supplier", "provider"])
+    .notNull()
+    .default("supplier"),
   category: varchar("category", { length: 160 }).notNull(),
-  status: mysqlEnum("status", ["active", "pending", "suspended", "rejected"]).notNull().default("pending"),
+  status: mysqlEnum("status", ["active", "pending", "suspended", "rejected"])
+    .notNull()
+    .default("pending"),
   verified: boolean("verified").notNull().default(false),
   email: varchar("email", { length: 320 }).notNull(),
   phone: varchar("phone", { length: 32 }).notNull(),
@@ -238,14 +309,25 @@ export const catalogProducts = mysqlTable("catalog_products", {
   price: int("price").notNull(),
   originalPrice: int("originalPrice"),
   /** Quantity-based unit prices, stored as ascending minimum-quantity tiers. */
-  priceTiers: json("priceTiers").$type<Array<{ minQuantity: number; unitPrice: number }>>(),
+  priceTiers:
+    json("priceTiers").$type<
+      Array<{ minQuantity: number; unitPrice: number }>
+    >(),
   tierPricingStartsAt: timestamp("tierPricingStartsAt"),
   tierPricingEndsAt: timestamp("tierPricingEndsAt"),
   unit: varchar("unit", { length: 120 }).notNull(),
   minOrder: int("minOrder").notNull().default(1),
   stock: int("stock").notNull().default(0),
   sold: int("sold").notNull().default(0),
-  status: mysqlEnum("status", ["active", "inactive", "pending_review", "rejected", "out_of_stock"]).notNull().default("pending_review"),
+  status: mysqlEnum("status", [
+    "active",
+    "inactive",
+    "pending_review",
+    "rejected",
+    "out_of_stock",
+  ])
+    .notNull()
+    .default("pending_review"),
   images: json("images").$type<string[]>().notNull(),
   shortDesc: text("shortDesc"),
   longDesc: text("longDesc"),
@@ -272,46 +354,73 @@ export type CatalogProduct = typeof catalogProducts.$inferSelect;
 export type InsertCatalogProduct = typeof catalogProducts.$inferInsert;
 
 /** Farmer requests for a product not currently available in the catalog. */
-export const productAvailabilityRequests = mysqlTable("product_availability_requests", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  requestedProduct: varchar("requestedProduct", { length: 255 }).notNull(),
-  sourceProductId: varchar("sourceProductId", { length: 64 }),
-  requesterName: varchar("requesterName", { length: 160 }).notNull(),
-  phone: varchar("phone", { length: 32 }).notNull(),
-  email: varchar("email", { length: 320 }),
-  city: varchar("city", { length: 120 }),
-  quantity: varchar("quantity", { length: 120 }),
-  notes: text("notes"),
-  status: mysqlEnum("status", ["new", "contacted", "sourcing", "fulfilled", "closed"]).notNull().default("new"),
-  adminNote: text("adminNote"),
-  ownerNotificationDelivered: boolean("ownerNotificationDelivered").notNull().default(false),
-  ownerNotifiedAt: timestamp("ownerNotifiedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const productAvailabilityRequests = mysqlTable(
+  "product_availability_requests",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    requestedProduct: varchar("requestedProduct", { length: 255 }).notNull(),
+    sourceProductId: varchar("sourceProductId", { length: 64 }),
+    requesterName: varchar("requesterName", { length: 160 }).notNull(),
+    phone: varchar("phone", { length: 32 }).notNull(),
+    email: varchar("email", { length: 320 }),
+    city: varchar("city", { length: 120 }),
+    quantity: varchar("quantity", { length: 120 }),
+    notes: text("notes"),
+    status: mysqlEnum("status", [
+      "new",
+      "contacted",
+      "sourcing",
+      "fulfilled",
+      "closed",
+    ])
+      .notNull()
+      .default("new"),
+    adminNote: text("adminNote"),
+    ownerNotificationDelivered: boolean("ownerNotificationDelivered")
+      .notNull()
+      .default(false),
+    ownerNotifiedAt: timestamp("ownerNotifiedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  }
+);
 
-export type ProductAvailabilityRequest = typeof productAvailabilityRequests.$inferSelect;
-export type InsertProductAvailabilityRequest = typeof productAvailabilityRequests.$inferInsert;
+export type ProductAvailabilityRequest =
+  typeof productAvailabilityRequests.$inferSelect;
+export type InsertProductAvailabilityRequest =
+  typeof productAvailabilityRequests.$inferInsert;
 
 /** Recommended active suppliers for a farmer request, generated when the request is submitted. */
-export const productAvailabilityRequestMatches = mysqlTable("product_availability_request_matches", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  requestId: varchar("requestId", { length: 64 }).notNull(),
-  vendorId: varchar("vendorId", { length: 64 }).notNull(),
-  vendorName: varchar("vendorName", { length: 255 }).notNull(),
-  vendorEmail: varchar("vendorEmail", { length: 320 }).notNull(),
-  vendorPhone: varchar("vendorPhone", { length: 32 }).notNull(),
-  vendorLocation: varchar("vendorLocation", { length: 120 }).notNull(),
-  vendorCategory: varchar("vendorCategory", { length: 160 }).notNull(),
-  matchScore: int("matchScore").notNull(),
-  matchReason: varchar("matchReason", { length: 500 }).notNull(),
-  status: mysqlEnum("status", ["suggested", "contacted", "accepted", "declined"]).notNull().default("suggested"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const productAvailabilityRequestMatches = mysqlTable(
+  "product_availability_request_matches",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    requestId: varchar("requestId", { length: 64 }).notNull(),
+    vendorId: varchar("vendorId", { length: 64 }).notNull(),
+    vendorName: varchar("vendorName", { length: 255 }).notNull(),
+    vendorEmail: varchar("vendorEmail", { length: 320 }).notNull(),
+    vendorPhone: varchar("vendorPhone", { length: 32 }).notNull(),
+    vendorLocation: varchar("vendorLocation", { length: 120 }).notNull(),
+    vendorCategory: varchar("vendorCategory", { length: 160 }).notNull(),
+    matchScore: int("matchScore").notNull(),
+    matchReason: varchar("matchReason", { length: 500 }).notNull(),
+    status: mysqlEnum("status", [
+      "suggested",
+      "contacted",
+      "accepted",
+      "declined",
+    ])
+      .notNull()
+      .default("suggested"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  }
+);
 
-export type ProductAvailabilityRequestMatch = typeof productAvailabilityRequestMatches.$inferSelect;
-export type InsertProductAvailabilityRequestMatch = typeof productAvailabilityRequestMatches.$inferInsert;
+export type ProductAvailabilityRequestMatch =
+  typeof productAvailabilityRequestMatches.$inferSelect;
+export type InsertProductAvailabilityRequestMatch =
+  typeof productAvailabilityRequestMatches.$inferInsert;
 
 /** Farmer questions submitted on a product and supplier responses published to the product page. */
 export const productQuestions = mysqlTable("product_questions", {
@@ -323,12 +432,16 @@ export const productQuestions = mysqlTable("product_questions", {
   question: text("question").notNull(),
   answer: text("answer"),
   answererName: varchar("answererName", { length: 160 }),
-  status: mysqlEnum("status", ["pending", "answered", "hidden"]).notNull().default("pending"),
+  status: mysqlEnum("status", ["pending", "answered", "hidden"])
+    .notNull()
+    .default("pending"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   answeredAt: timestamp("answeredAt"),
   helpfulCount: int("helpfulCount").notNull().default(0),
   notHelpfulCount: int("notHelpfulCount").notNull().default(0),
-  vendorNotificationDelivered: boolean("vendorNotificationDelivered").notNull().default(false),
+  vendorNotificationDelivered: boolean("vendorNotificationDelivered")
+    .notNull()
+    .default(false),
   vendorNotifiedAt: timestamp("vendorNotifiedAt"),
   vendorNotificationError: varchar("vendorNotificationError", { length: 500 }),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -347,13 +460,16 @@ export const productQuestionFeedback = mysqlTable("product_question_feedback", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type ProductQuestionFeedback = typeof productQuestionFeedback.$inferSelect;
+export type ProductQuestionFeedback =
+  typeof productQuestionFeedback.$inferSelect;
 
 /** In-app alerts scoped to an approved vendor account; currently created for new product questions. */
 export const vendorNotifications = mysqlTable("vendor_notifications", {
   id: varchar("id", { length: 64 }).primaryKey(),
   vendorId: varchar("vendorId", { length: 64 }).notNull(),
-  type: mysqlEnum("type", ["product_question"]).notNull().default("product_question"),
+  type: mysqlEnum("type", ["product_question"])
+    .notNull()
+    .default("product_question"),
   title: varchar("title", { length: 255 }).notNull(),
   message: text("message").notNull(),
   productId: varchar("productId", { length: 64 }).notNull(),
@@ -368,15 +484,21 @@ export type VendorNotification = typeof vendorNotifications.$inferSelect;
 export type InsertVendorNotification = typeof vendorNotifications.$inferInsert;
 
 /** Supplier-controlled delivery preferences for the notification types currently supported by the platform. */
-export const vendorNotificationPreferences = mysqlTable("vendor_notification_preferences", {
-  vendorId: varchar("vendorId", { length: 64 }).primaryKey(),
-  productQuestionEnabled: boolean("productQuestionEnabled").notNull().default(true),
-  inAppToastEnabled: boolean("inAppToastEnabled").notNull().default(true),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const vendorNotificationPreferences = mysqlTable(
+  "vendor_notification_preferences",
+  {
+    vendorId: varchar("vendorId", { length: 64 }).primaryKey(),
+    productQuestionEnabled: boolean("productQuestionEnabled")
+      .notNull()
+      .default(true),
+    inAppToastEnabled: boolean("inAppToastEnabled").notNull().default(true),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  }
+);
 
-export type InsertVendorNotificationPreferences = typeof vendorNotificationPreferences.$inferInsert;
+export type InsertVendorNotificationPreferences =
+  typeof vendorNotificationPreferences.$inferInsert;
 
 /** Messages submitted from the public contact form. */
 export const contactInquiries = mysqlTable("contact_inquiries", {
@@ -386,7 +508,9 @@ export const contactInquiries = mysqlTable("contact_inquiries", {
   phone: varchar("phone", { length: 32 }),
   subject: varchar("subject", { length: 255 }).notNull(),
   message: text("message").notNull(),
-  status: mysqlEnum("status", ["new", "in_progress", "resolved", "closed"]).notNull().default("new"),
+  status: mysqlEnum("status", ["new", "in_progress", "resolved", "closed"])
+    .notNull()
+    .default("new"),
   adminReply: text("adminReply"),
   handledBy: varchar("handledBy", { length: 160 }),
   respondedAt: timestamp("respondedAt"),
@@ -408,8 +532,20 @@ export const adminNotificationReads = mysqlTable("admin_notification_reads", {
 export type AdminNotificationRead = typeof adminNotificationReads.$inferSelect;
 
 /** Live commercial order header. Each record is assigned to one supplier for clear fulfillment ownership. */
-const commerceOrderStatus = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"] as const;
-const cancellationStatus = ["none", "requested", "approved", "rejected"] as const;
+const commerceOrderStatus = [
+  "pending",
+  "confirmed",
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled",
+] as const;
+const cancellationStatus = [
+  "none",
+  "requested",
+  "approved",
+  "rejected",
+] as const;
 
 export const commerceOrders = mysqlTable("commerce_orders", {
   id: varchar("id", { length: 64 }).primaryKey(),
@@ -420,7 +556,15 @@ export const commerceOrders = mysqlTable("commerce_orders", {
   customerEmail: varchar("customerEmail", { length: 320 }),
   vendorId: varchar("vendorId", { length: 64 }).notNull(),
   vendorName: varchar("vendorName", { length: 255 }).notNull(),
-  deliveryAddress: json("deliveryAddress").$type<{ city: string; district: string; street: string; building?: string | null; notes?: string | null }>().notNull(),
+  deliveryAddress: json("deliveryAddress")
+    .$type<{
+      city: string;
+      district: string;
+      street: string;
+      building?: string | null;
+      notes?: string | null;
+    }>()
+    .notNull(),
   paymentMethod: varchar("paymentMethod", { length: 64 }).notNull(),
   subtotal: int("subtotal").notNull(),
   discount: int("discount").notNull().default(0),
@@ -428,7 +572,9 @@ export const commerceOrders = mysqlTable("commerce_orders", {
   vat: int("vat").notNull().default(0),
   total: int("total").notNull(),
   status: mysqlEnum("status", commerceOrderStatus).notNull().default("pending"),
-  cancellationStatus: mysqlEnum("cancellationStatus", cancellationStatus).notNull().default("none"),
+  cancellationStatus: mysqlEnum("cancellationStatus", cancellationStatus)
+    .notNull()
+    .default("none"),
   cancellationReason: text("cancellationReason"),
   cancellationRequestedAt: timestamp("cancellationRequestedAt"),
   cancellationResolvedAt: timestamp("cancellationResolvedAt"),
@@ -453,58 +599,78 @@ export const commerceOrderItems = mysqlTable("commerce_order_items", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export const commerceOrderTrackingEvents = mysqlTable("commerce_order_tracking_events", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  orderId: varchar("orderId", { length: 64 }).notNull(),
-  status: mysqlEnum("status", commerceOrderStatus).notNull(),
-  title: varchar("title", { length: 255 }).notNull(),
-  message: text("message").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const commerceOrderTrackingEvents = mysqlTable(
+  "commerce_order_tracking_events",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    orderId: varchar("orderId", { length: 64 }).notNull(),
+    status: mysqlEnum("status", commerceOrderStatus).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    message: text("message").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  }
+);
 
-export const customerOrderNotifications = mysqlTable("customer_order_notifications", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  customerId: int("customerId").notNull(),
-  orderId: varchar("orderId", { length: 64 }).notNull(),
-  type: mysqlEnum("type", ["order_status", "shipment_update"]).notNull().default("order_status"),
-  title: varchar("title", { length: 255 }).notNull(),
-  message: text("message").notNull(),
-  isRead: boolean("isRead").notNull().default(false),
-  readAt: timestamp("readAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const customerOrderNotifications = mysqlTable(
+  "customer_order_notifications",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    customerId: int("customerId").notNull(),
+    orderId: varchar("orderId", { length: 64 }).notNull(),
+    type: mysqlEnum("type", ["order_status", "shipment_update"])
+      .notNull()
+      .default("order_status"),
+    title: varchar("title", { length: 255 }).notNull(),
+    message: text("message").notNull(),
+    isRead: boolean("isRead").notNull().default(false),
+    readAt: timestamp("readAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  }
+);
 
 /** Supplier-facing alerts for cancellation requests requiring a decision. */
-export const vendorOrderNotifications = mysqlTable("vendor_order_notifications", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  vendorId: varchar("vendorId", { length: 64 }).notNull(),
-  orderId: varchar("orderId", { length: 64 }).notNull(),
-  type: mysqlEnum("type", ["cancellation_request"]).notNull().default("cancellation_request"),
-  title: varchar("title", { length: 255 }).notNull(),
-  message: text("message").notNull(),
-  isRead: boolean("isRead").notNull().default(false),
-  readAt: timestamp("readAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const vendorOrderNotifications = mysqlTable(
+  "vendor_order_notifications",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    vendorId: varchar("vendorId", { length: 64 }).notNull(),
+    orderId: varchar("orderId", { length: 64 }).notNull(),
+    type: mysqlEnum("type", ["cancellation_request"])
+      .notNull()
+      .default("cancellation_request"),
+    title: varchar("title", { length: 255 }).notNull(),
+    message: text("message").notNull(),
+    isRead: boolean("isRead").notNull().default(false),
+    readAt: timestamp("readAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  }
+);
 
 /** Verified delivery feedback: one customer submission per delivered order. */
-export const commerceOrderDeliveryRatings = mysqlTable("commerce_order_delivery_ratings", {
-  id: varchar("id", { length: 64 }).primaryKey(),
-  orderId: varchar("orderId", { length: 64 }).notNull().unique(),
-  customerId: int("customerId").notNull(),
-  rating: int("rating").notNull(),
-  comment: text("comment"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const commerceOrderDeliveryRatings = mysqlTable(
+  "commerce_order_delivery_ratings",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    orderId: varchar("orderId", { length: 64 }).notNull().unique(),
+    customerId: int("customerId").notNull(),
+    rating: int("rating").notNull(),
+    comment: text("comment"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  }
+);
 
 export type CommerceOrder = typeof commerceOrders.$inferSelect;
 export type InsertCommerceOrder = typeof commerceOrders.$inferInsert;
 export type CommerceOrderItem = typeof commerceOrderItems.$inferSelect;
-export type CommerceOrderTrackingEvent = typeof commerceOrderTrackingEvents.$inferSelect;
-export type CustomerOrderNotification = typeof customerOrderNotifications.$inferSelect;
-export type VendorOrderNotification = typeof vendorOrderNotifications.$inferSelect;
-export type CommerceOrderDeliveryRating = typeof commerceOrderDeliveryRatings.$inferSelect;
+export type CommerceOrderTrackingEvent =
+  typeof commerceOrderTrackingEvents.$inferSelect;
+export type CustomerOrderNotification =
+  typeof customerOrderNotifications.$inferSelect;
+export type VendorOrderNotification =
+  typeof vendorOrderNotifications.$inferSelect;
+export type CommerceOrderDeliveryRating =
+  typeof commerceOrderDeliveryRatings.$inferSelect;
 
 /** Editorial articles shown in the public أخبار وقصص section and managed by administrators. */
 export const contentArticles = mysqlTable("content_articles", {
@@ -520,7 +686,9 @@ export const contentArticles = mysqlTable("content_articles", {
   categoryEn: varchar("categoryEn", { length: 120 }),
   tagsEn: json("tagsEn").$type<string[]>(),
   coverImage: varchar("coverImage", { length: 1000 }),
-  status: mysqlEnum("status", ["draft", "published", "archived"]).notNull().default("draft"),
+  status: mysqlEnum("status", ["draft", "published", "archived"])
+    .notNull()
+    .default("draft"),
   authorName: varchar("authorName", { length: 160 }).notNull(),
   viewCount: int("viewCount").notNull().default(0),
   publishedAt: timestamp("publishedAt"),

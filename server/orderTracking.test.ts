@@ -9,8 +9,8 @@ describe("تتبع الطلبات الحي", () => {
     const schema = projectFile("drizzle/schema.ts");
     expect(schema).toContain('mysqlTable("commerce_orders"');
     expect(schema).toContain('mysqlTable("commerce_order_items"');
-    expect(schema).toContain('mysqlTable("commerce_order_tracking_events"');
-    expect(schema).toContain('mysqlTable("customer_order_notifications"');
+    expect(schema).toContain('"commerce_order_tracking_events"');
+    expect(schema).toContain('"customer_order_notifications"');
     expect(schema).toContain('trackingNumber');
     expect(schema).toContain('shippingProvider');
   });
@@ -42,7 +42,7 @@ describe("تتبع الطلبات الحي", () => {
     const router = projectFile("server/routers/orders.router.ts");
     const customerOrders = projectFile("client/src/pages/dashboard/DashboardOrders.tsx");
     const vendorOrders = projectFile("client/src/pages/vendor/VendorOrders.tsx");
-    expect(schema).toContain('mysqlTable("vendor_order_notifications"');
+    expect(schema).toContain('"vendor_order_notifications"');
     expect(schema).toContain("cancellationStatus");
     expect(router).toContain("requestCancellation: protectedProcedure");
     expect(router).toContain("vendorReviewCancellation: vendorProcedure");
@@ -64,7 +64,7 @@ describe("تتبع الطلبات الحي", () => {
     const database = projectFile("server/db/orders.db.ts");
     const router = projectFile("server/routers/orders.router.ts");
     const customerOrders = projectFile("client/src/pages/dashboard/DashboardOrders.tsx");
-    expect(schema).toContain('mysqlTable("commerce_order_delivery_ratings"');
+    expect(schema).toContain('"commerce_order_delivery_ratings"');
     expect(schema).toContain('unique()');
     expect(database).toContain("order.status !== \"delivered\"");
     expect(database).toContain("تم إرسال تقييم تجربة التوصيل لهذا الطلب مسبقاً");
