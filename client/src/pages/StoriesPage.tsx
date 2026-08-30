@@ -1,0 +1,55 @@
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, BookOpen, CalendarDays, FileText, Leaf, Newspaper, Search, SlidersHorizontal, Sprout, Tag, X } from "lucide-react";
+import { Link, useSearch } from "wouter";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import ScrollToTop from "@/components/ScrollToTop";
+import { trpc } from "@/lib/trpc";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+function formatArticleDate(value: Date | string | null) { return value ? new Intl.DateTimeFormat("ar-SA", { day: "numeric", month: "long", year: "numeric" }).format(new Date(value)) : "مقال منشور حديثاً"; }
+function dateValue(value: Date | string | null) { return value ? new Date(value).getTime() : 0; }
+
+export default function StoriesPage() {
+  const { isEnglish } = useLanguage();
+  const { data: rawArticles = [], isLoading, isError } = trpc.contentArticles.publicList.useQuery();
+  const articles = useMemo(() => rawArticles.map((article) => isEnglish ? {
+    ...article,
+    title: article.titleEn?.trim() || article.title,
+    excerpt: article.excerptEn?.trim() || article.excerpt,
+    category: article.categoryEn?.trim() || article.category,
+    tags: article.tagsEn?.length ? article.tagsEn : article.tags,
+  } : article), [isEnglish, rawArticles]);
+  const searchString = useSearch();
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
+  const [tag, setTag] = useState("all");
+  const [sort, setSort] = useState<"newest" | "oldest">("newest");
+  useEffect(() => {
+    const requestedTag = new URLSearchParams(searchString).get("tag");
+    if (requestedTag) setTag(requestedTag);
+  }, [searchString]);
+  const categories = useMemo(() => Array.from(new Set(articles.map((article) => article.category))).sort(), [articles]);
+  const tags = useMemo(() => Array.from(new Set(articles.flatMap((article) => article.tags ?? []))).sort(), [articles]);
+  const filtered = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return [...articles].filter((article) => {
+      const textMatches = !normalized || [article.title, article.excerpt, article.category, ...(article.tags ?? [])].some((value) => value.toLowerCase().includes(normalized));
+      return textMatches && (category === "all" || article.category === category) && (tag === "all" || (article.tags ?? []).includes(tag));
+    }).sort((a, b) => sort === "newest" ? dateValue(b.publishedAt) - dateValue(a.publishedAt) : dateValue(a.publishedAt) - dateValue(b.publishedAt));
+  }, [articles, category, query, sort, tag]);
+  const hasFilters = Boolean(query) || category !== "all" || tag !== "all" || sort !== "newest";
+  const clearFilters = () => { setQuery(""); setCategory("all"); setTag("all"); setSort("newest"); };
+
+  return <div className="min-h-screen bg-[#F8F6F0]" dir="rtl">
+    <Navbar />
+    <main>
+      <section className="relative overflow-hidden bg-[#173E30] py-14 sm:py-20"><div className="pointer-events-none absolute inset-0 opacity-25" style={{ backgroundImage: "radial-gradient(circle at 15% 10%, #93BE86 0, transparent 26%), radial-gradient(circle at 90% 90%, #C9A227 0, transparent 30%)" }} /><div className="container relative max-w-5xl"><span className="inline-flex items-center gap-2 rounded-full border border-[#C9A227]/35 bg-[#C9A227]/10 px-3 py-1 text-xs font-bold text-[#F4D889]"><Newspaper className="h-3.5 w-3.5" />معرفة زراعية من حصاد</span><h1 className="mt-5 max-w-3xl text-3xl font-black leading-tight text-white sm:text-5xl">أخبار وقصص تساعدك على اتخاذ الخطوة التالية</h1><p className="mt-5 max-w-2xl text-base leading-8 text-[#D4E4D5] sm:text-lg">استخدم البحث والتصنيفات والوسوم للوصول إلى المقالات التي تهم مزرعتك. يبقى المحتوى إرشادياً ولا يغني عن رأي المختص عند الحاجة.</p></div></section>
+      <section className="container max-w-6xl py-10 sm:py-14"><div className="mb-7 flex items-end justify-between gap-4"><div><p className="text-sm font-bold text-[#5D896E]">المحتوى المنشور</p><h2 className="mt-1 text-2xl font-black text-[#263238]">استكشف المقالات</h2></div><Leaf className="h-9 w-9 text-[#9AB56F]" /></div>
+        {!isLoading && !isError && articles.length > 0 && <div className="mb-7 rounded-2xl border border-[#DEE9DA] bg-white p-4 sm:p-5"><div className="grid gap-3 lg:grid-cols-[1fr_180px_180px_150px]"><label className="relative"><Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#708178]" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ابحث في العنوان أو الملخص أو الوسم..." className="w-full rounded-xl border border-[#D6E2D2] bg-[#FBFCFA] py-3 pl-3 pr-10 text-sm text-[#263238] outline-none focus:border-[#3B7D45]" /></label><label className="relative"><SlidersHorizontal className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#708178]" /><select value={category} onChange={(event) => setCategory(event.target.value)} className="w-full appearance-none rounded-xl border border-[#D6E2D2] bg-[#FBFCFA] py-3 pl-3 pr-10 text-sm text-[#34473B] outline-none focus:border-[#3B7D45]"><option value="all">كل التصنيفات</option>{categories.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><label className="relative"><Tag className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#708178]" /><select value={tag} onChange={(event) => setTag(event.target.value)} className="w-full appearance-none rounded-xl border border-[#D6E2D2] bg-[#FBFCFA] py-3 pl-3 pr-10 text-sm text-[#34473B] outline-none focus:border-[#3B7D45]"><option value="all">كل الوسوم</option>{tags.map((item) => <option key={item} value={item}>#{item}</option>)}</select></label><select value={sort} onChange={(event) => setSort(event.target.value as "newest" | "oldest")} className="rounded-xl border border-[#D6E2D2] bg-[#FBFCFA] px-3 py-3 text-sm text-[#34473B] outline-none focus:border-[#3B7D45]"><option value="newest">الأحدث أولاً</option><option value="oldest">الأقدم أولاً</option></select></div><div className="mt-4 flex flex-wrap items-center gap-2"><span className="text-xs font-bold text-[#62736A]">تصنيفات سريعة:</span><button onClick={() => setCategory("all")} className={`rounded-full px-3 py-1.5 text-xs font-bold ${category === "all" ? "bg-[#1F6B45] text-white" : "bg-[#EEF5EA] text-[#3E6848]"}`}>الكل</button>{categories.map((item) => <button key={item} onClick={() => setCategory(item)} className={`rounded-full px-3 py-1.5 text-xs font-bold ${category === item ? "bg-[#1F6B45] text-white" : "bg-[#EEF5EA] text-[#3E6848]"}`}>{item}</button>)}{hasFilters && <button onClick={clearFilters} className="mr-auto inline-flex items-center gap-1 text-xs font-bold text-[#8A6420] hover:text-[#5F4313]"><X className="h-3.5 w-3.5" />مسح الفلاتر</button>}</div></div>}
+        {isLoading ? <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map((item) => <div key={item} className="animate-pulse rounded-2xl border border-[#E1E9DD] bg-white p-5"><div className="h-36 rounded-xl bg-[#EAF0E7]" /><div className="mt-5 h-4 w-2/3 rounded bg-[#EAF0E7]" /><div className="mt-3 h-3 w-full rounded bg-[#F0F4EE]" /></div>)}</div> : isError ? <div className="rounded-2xl border border-[#E7D8B9] bg-[#FFF8E8] p-7 text-center"><FileText className="mx-auto h-9 w-9 text-[#A67C22]" /><h2 className="mt-3 text-lg font-black text-[#493B22]">تعذر تحميل المقالات حالياً</h2><p className="mt-2 text-sm leading-7 text-[#6D5B38]">أعد المحاولة بعد قليل، أو انتقل إلى دليل المزارع للاطلاع على إرشادات المنصة.</p></div> : articles.length === 0 ? <div className="rounded-2xl border border-dashed border-[#C9D8C6] bg-white px-6 py-14 text-center"><BookOpen className="mx-auto h-11 w-11 text-[#8BA98C]" /><h2 className="mt-4 text-xl font-black text-[#263238]">ستصل المقالات قريباً</h2><p className="mx-auto mt-2 max-w-lg text-sm leading-7 text-[#617168]">تُدار هذه الصفحة الآن مباشرة من لوحة الإدارة. سيظهر هنا كل مقال ينشره فريق حصاد.</p><Link href="/info/farmer-guide" className="mt-5 inline-flex rounded-xl bg-[#1F4D3A] px-4 py-2.5 text-sm font-bold text-white">اقرأ دليل المزارع</Link></div> : filtered.length ? <><p className="mb-4 text-sm text-[#617168]">{filtered.length} {filtered.length === 1 ? "مقال مطابق" : "مقالات مطابقة"}</p><div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{filtered.map((article) => <article key={article.id} className="group flex min-h-[390px] flex-col overflow-hidden rounded-2xl border border-[#E1E9DD] bg-white shadow-[0_3px_16px_rgba(31,77,58,0.05)]"><div className="h-40 bg-[#EAF5E7]">{article.coverImage ? <img src={article.coverImage} alt="" className="h-full w-full object-cover" /> : <div className="relative grid h-full place-items-center overflow-hidden bg-[linear-gradient(135deg,#1F4D3A,#4E8154)]"><Sprout className="relative h-12 w-12 text-[#EAF4D5]" /><span className="absolute -left-4 -top-6 h-24 w-24 rounded-full bg-[#C9A227]/20" /></div>}</div><div className="flex flex-1 flex-col p-5"><div className="flex items-center justify-between gap-3 text-xs font-bold"><button onClick={() => setCategory(article.category)} className="rounded-full bg-[#EEF5EA] px-2.5 py-1 text-[#356341]">{article.category}</button><span className="inline-flex items-center gap-1 text-[#78867E]"><CalendarDays className="h-3.5 w-3.5" />{formatArticleDate(article.publishedAt)}</span></div><h3 className="mt-4 text-xl font-black leading-8 text-[#263238]">{article.title}</h3><p className="mt-3 line-clamp-3 text-sm leading-7 text-[#617168]">{article.excerpt}</p>{(article.tags ?? []).length > 0 && <div className="mt-3 flex flex-wrap gap-1.5">{(article.tags ?? []).map((item) => <button key={item} onClick={() => setTag(item)} className="rounded-full bg-[#F4F0FA] px-2 py-1 text-[11px] font-bold text-[#6A4C86] hover:bg-[#EBDDFA]">#{item}</button>)}</div>}<Link href={`/stories/${article.id}`} className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-black text-[#1F6B45]">اقرأ المقال<ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" /></Link></div></article>)}</div></> : <div className="rounded-2xl border border-dashed border-[#C9D8C6] bg-white px-6 py-14 text-center"><Search className="mx-auto h-10 w-10 text-[#8BA98C]" /><h2 className="mt-4 text-xl font-black text-[#263238]">لا توجد نتائج مطابقة</h2><p className="mx-auto mt-2 max-w-lg text-sm leading-7 text-[#617168]">جرّب تغيير كلمة البحث أو اختيار تصنيف ووسم مختلفين.</p><button onClick={clearFilters} className="mt-5 rounded-xl bg-[#1F4D3A] px-4 py-2.5 text-sm font-bold text-white">مسح البحث والفلاتر</button></div>}
+        <p className="mt-8 flex items-start gap-2 rounded-xl border border-[#E5E1D6] bg-white px-4 py-3 text-xs leading-6 text-[#68766D]"><FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#5D896E]" />المقالات المنشورة معلوماتية وإرشادية. راجع المختص الزراعي أو الجهة المعتمدة عندما يتطلب القرار تقييماً ميدانياً أو توصية متخصصة.</p>
+      </section>
+    </main><Footer /><ScrollToTop />
+  </div>;
+}

@@ -1,0 +1,1 @@
+ALTER TABLE `admin_vendor_profiles` MODIFY COLUMN `status` enum('active','pending','suspended','rejected') NOT NULL DEFAULT 'pending';

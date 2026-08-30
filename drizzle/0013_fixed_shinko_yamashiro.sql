@@ -1,0 +1,1 @@
+ALTER TABLE `catalog_products` ADD `priceTiers` json;

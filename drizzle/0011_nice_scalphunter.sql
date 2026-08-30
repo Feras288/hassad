@@ -1,0 +1,1 @@
+ALTER TABLE `content_articles` ADD `tags` json;

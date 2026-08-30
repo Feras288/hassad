@@ -1,0 +1,1 @@
+ALTER TABLE `content_articles` ADD `viewCount` int DEFAULT 0 NOT NULL;
