@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 
 type QuoteThreadProps = {
   quote: { id: string; status: "new" | "negotiating" | "accepted" | "rejected" | "cancelled"; listingTitle: string; requestedQuantity: number; listingUnit: string };
-  currentUserId: number;
+  currentUserId: string;
   counterpartName?: string | null;
   canDecide?: boolean;
   canCancel?: boolean;

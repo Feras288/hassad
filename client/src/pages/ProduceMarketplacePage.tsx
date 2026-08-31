@@ -11,7 +11,7 @@ import ProduceImageLightbox from "@/components/produce/ProduceImageLightbox";
 import { trpc } from "@/lib/trpc";
 
 type Certificate = { name: string; url: string };
-type Listing = { id: string; farmerId: number; farmerName: string | null; title: string; cropType: string; variety: string | null; grade: string | null; location: string; harvestDate: Date | null; availableQuantity: number; unit: string; minOrderQuantity: number; priceMode: "request_quote" | "visible_to_b2b"; wholesalePrice: number | null; images: string[]; qualityCertificates: Certificate[] | null; description: string | null; priceVisible: boolean };
+type Listing = { id: string; farmerId: string; farmerName: string | null; title: string; cropType: string; variety: string | null; grade: string | null; location: string; harvestDate: Date | null; availableQuantity: number; unit: string; minOrderQuantity: number; priceMode: "request_quote" | "visible_to_b2b"; wholesalePrice: number | null; images: string[]; qualityCertificates: Certificate[] | null; description: string | null; priceVisible: boolean };
 const buyerTypes = [{ value: "company", label: "شركة" }, { value: "trader", label: "تاجر / موزع" }, { value: "restaurant", label: "مطعم / منشأة غذائية" }] as const;
 type BusinessApplication = { businessType: (typeof buyerTypes)[number]["value"]; businessName: string; contactName: string; phone: string; crNumber: string; vatNumber: string };
 const profileStatusText: Record<string, string> = { pending: "طلب اعتمادك قيد المراجعة", rejected: "لم يتم اعتماد الطلب بعد؛ حدّث بيانات المنشأة وأعد الإرسال.", suspended: "حساب الجملة موقوف مؤقتاً. تواصل مع إدارة المنصة." };

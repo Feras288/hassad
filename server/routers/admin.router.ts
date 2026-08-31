@@ -28,7 +28,7 @@ const articleCoverUploadSchema = z.object({
   dataUrl: z.string().min(30).max(9_000_000),
 });
 
-export async function getAdminNotificationHistory(adminUserId: number) {
+export async function getAdminNotificationHistory(adminUserId: string) {
   const [inquiries, requests, readKeys] = await Promise.all([
     listContactInquiries(),
     listProductAvailabilityRequests(),
@@ -230,22 +230,22 @@ export const adminManagementRouter = router({
       )
       .mutation(({ input }) =>
         createAdminManagedUser({
-          openId: `admin_invite_${nanoid(20)}`,
+          id: `usr_${nanoid(20)}`,
           name: input.name,
-          email: input.email,
+          email: input.email.trim().toLowerCase(),
+          emailVerified: true,
           role: input.role,
           vendorId: input.vendorId ?? null,
           loginMethod: "admin_invite",
-          lastSignedIn: new Date(),
         })
       ),
     update: adminProcedure
       .input(
         z.object({
-          id: z.number().int().positive(),
+          id: z.string().min(1).max(64),
           updates: z.object({
-            name: z.string().min(2).max(160).nullable().optional(),
-            email: z.string().email().max(320).nullable().optional(),
+            name: z.string().min(2).max(160).optional(),
+            email: z.string().email().max(320).optional(),
             role: z.enum(["user", "admin", "vendor"]).optional(),
             vendorId: z.string().max(64).nullable().optional(),
           }),
@@ -260,7 +260,7 @@ export const vendorAccountsRouter = router({
   link: adminProcedure
     .input(
       z.object({
-        userId: z.number().int().positive(),
+        userId: z.string().min(1).max(64),
         vendorId: z.string().min(1).max(64),
       })
     )

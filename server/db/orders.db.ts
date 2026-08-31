@@ -92,7 +92,7 @@ export async function createCommerceOrder(
   return hydrateCommerceOrder(created[0]);
 }
 
-export async function listCommerceOrdersForCustomer(customerId: number) {
+export async function listCommerceOrdersForCustomer(customerId: string) {
   const db = await getDb();
   if (!db) return [];
   const orders = await db
@@ -185,7 +185,7 @@ export async function updateCommerceOrderStatusForAdmin(input: {
 
 export async function getCommerceOrderForCustomer(
   orderId: string,
-  customerId: number
+  customerId: string
 ) {
   const db = await getDb();
   if (!db) return undefined;
@@ -283,7 +283,7 @@ export async function updateCommerceOrderTracking(input: {
   return hydrateCommerceOrder(updated[0]);
 }
 
-export async function listCustomerOrderNotifications(customerId: number) {
+export async function listCustomerOrderNotifications(customerId: string) {
   const db = await getDb();
   if (!db) return [];
   return db
@@ -295,7 +295,7 @@ export async function listCustomerOrderNotifications(customerId: number) {
 
 export async function setCustomerOrderNotificationRead(
   notificationId: string,
-  customerId: number,
+  customerId: string,
   isRead: boolean
 ) {
   const db = await getDb();
@@ -315,7 +315,7 @@ export async function setCustomerOrderNotificationRead(
 export async function createCommerceOrderDeliveryRating(input: {
   id: string;
   orderId: string;
-  customerId: number;
+  customerId: string;
   rating: number;
   comment?: string | null;
 }) {
@@ -362,7 +362,7 @@ export async function createCommerceOrderDeliveryRating(input: {
 
 export async function requestCommerceOrderCancellation(input: {
   orderId: string;
-  customerId: number;
+  customerId: string;
   reason: string;
   event: CommerceTrackingEventInput;
   vendorNotification: { id: string; title: string; message: string };

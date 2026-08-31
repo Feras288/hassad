@@ -16,6 +16,8 @@ import FarmerRegisterForm from "../components/auth/FarmerRegisterForm";
 import ProviderRegisterForm from "../components/auth/ProviderRegisterForm";
 import SupplierRegisterForm from "../components/auth/SupplierRegisterForm";
 
+import { authClient } from "@/lib/auth-client";
+
 export default function AuthPage() {
   const [, navigate] = useLocation();
   const [mode, setMode] = useState<AuthMode>("login");
@@ -25,7 +27,7 @@ export default function AuthPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Form states
-  const [loginForm, setLoginForm] = useState({ phone: "", password: "" });
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [farmerForm, setFarmerForm] = useState({
     fullName: "",
     phone: "",
@@ -72,50 +74,45 @@ export default function AuthPage() {
     setStep(1);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!loginForm.email || !loginForm.password) {
+      toast.error("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+      return;
+    }
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const { data, error } = await authClient.signIn.email({
+        email: loginForm.email.trim(),
+        password: loginForm.password,
+      });
+
+      if (error) {
+        toast.error(error.message || "فشل تسجيل الدخول، يرجى التحقق من صحة البيانات");
+        return;
+      }
+
       toast.success("تم تسجيل الدخول بنجاح! مرحباً بك في حصاد");
       navigate("/dashboard");
-    }, 1500);
+    } catch (err: any) {
+      toast.error(err?.message || "حدث خطأ غير متوقع أثناء تسجيل الدخول");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleFarmerRegister = (e: React.FormEvent) => {
+  const handleFarmerRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step < 2) {
       setStep(2);
       return;
     }
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("تم إنشاء حسابك بنجاح! مرحباً بك في حصاد");
-      navigate("/dashboard");
-    }, 1800);
-  };
-
-  const handleProviderRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (step < 2) {
-      setStep(2);
+    if (!farmerForm.email || !farmerForm.password) {
+      toast.error("يرجى إدخال البريد الإلكتروني وكلمة المرور");
       return;
     }
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success(
-        "تم إنشاء حسابك كمقدم خدمة بنجاح! سيتم مراجعة ملفك خلال 24 ساعة"
-      );
-      navigate("/dashboard");
-    }, 1800);
-  };
-
-  const handleSupplierRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (step < 3) {
-      setStep(step + 1);
+    if (farmerForm.password !== farmerForm.confirmPassword) {
+      toast.error("كلمتا المرور غير متطابقتين");
       return;
     }
     if (!agreedToTerms) {
@@ -123,10 +120,119 @@ export default function AuthPage() {
       return;
     }
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const { data, error } = await authClient.signUp.email({
+        email: farmerForm.email.trim().toLowerCase(),
+        password: farmerForm.password,
+        name: farmerForm.fullName || "مزارع حصاد",
+      });
+
+      if (error) {
+        toast.error(error.message || "فشل إنشاء الحساب");
+        return;
+      }
+
+      toast.success("تم إنشاء حسابك بنجاح! مرحباً بك في حصاد");
+      navigate("/dashboard");
+    } catch (err: any) {
+      toast.error(err?.message || "حدث خطأ أثناء إنشاء الحساب");
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleProviderRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (step < 2) {
+      setStep(2);
+      return;
+    }
+    if (!providerForm.email || !providerForm.password) {
+      toast.error("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+      return;
+    }
+    if (providerForm.password !== providerForm.confirmPassword) {
+      toast.error("كلمتا المرور غير متطابقتين");
+      return;
+    }
+    if (!agreedToTerms) {
+      toast.error("يرجى الموافقة على الشروط أولاً");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { data, error } = await authClient.signUp.email({
+        email: providerForm.email.trim().toLowerCase(),
+        password: providerForm.password,
+        name: providerForm.fullName || "مقدم خدمة",
+      });
+
+      if (error) {
+        toast.error(error.message || "فشل إنشاء الحساب");
+        return;
+      }
+
+      toast.success("تم إنشاء حسابك كمقدم خدمة بنجاح! مرحباً بك في حصاد");
+      navigate("/dashboard");
+    } catch (err: any) {
+      toast.error(err?.message || "حدث خطأ أثناء إنشاء الحساب");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSupplierRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (step < 3) {
+      setStep(step + 1);
+      return;
+    }
+    if (!supplierForm.email || !supplierForm.password) {
+      toast.error("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+      return;
+    }
+    if (supplierForm.password !== supplierForm.confirmPassword) {
+      toast.error("كلمتا المرور غير متطابقتين");
+      return;
+    }
+    if (!agreedToTerms) {
+      toast.error("يرجى الموافقة على الشروط أولاً");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { data, error } = await authClient.signUp.email({
+        email: supplierForm.email.trim().toLowerCase(),
+        password: supplierForm.password,
+        name: supplierForm.companyName || supplierForm.contactName || "مورد معتمد",
+      });
+
+      if (error) {
+        toast.error(error.message || "فشل إنشاء الحساب");
+        return;
+      }
+
+      toast.success("تم تسجيل بيانات المنشأة بنجاح!");
       navigate("/supplier-pending");
-    }, 1800);
+    } catch (err: any) {
+      toast.error(err?.message || "حدث خطأ أثناء إنشاء الحساب");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider: "google") => {
+    setIsLoading(true);
+    try {
+      await authClient.signIn.social({
+        provider,
+        callbackURL: "/dashboard",
+      });
+    } catch (err: any) {
+      toast.error(err?.message || "فشل تسجيل الدخول الاجتماعي");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -160,6 +266,7 @@ export default function AuthPage() {
                 onSelectAccountType={() => setMode("account-type")}
                 form={loginForm}
                 setForm={setLoginForm}
+                onSocialLogin={handleSocialLogin}
               />
             )}
 

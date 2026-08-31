@@ -89,7 +89,7 @@ export const adminOrderItemSchema = z.object({
 });
 
 export const adminOrderCreateSchema = z.object({
-  customerId: z.number().int().positive().nullable().optional(),
+  customerId: z.string().min(1).max(64).nullable().optional(),
   customerName: z.string().trim().min(2).max(160),
   customerPhone: z.string().trim().min(7).max(32),
   customerEmail: z.string().trim().email().max(320).nullable().optional(),

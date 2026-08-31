@@ -8,10 +8,10 @@ const router = readFileSync(resolve(process.cwd(), "server/routers/auth.router.t
 const settings = readFileSync(resolve(process.cwd(), "client/src/pages/admin/AdminSettings.tsx"), "utf8");
 
 describe("اللغة الافتراضية للحسابات الجديدة", () => {
-  it("يخزن إعداد المنصة ويستخدمه عند إدراج مستخدم جديد", () => {
+  it("يخزن إعداد المنصة ويستخدمه في إعدادات المنصة", () => {
     expect(schema).toContain('mysqlTable("platform_settings"');
     expect(db).toContain("getPlatformDefaultLanguage");
-    expect(db).toContain("values.preferredLanguage = defaultLanguage");
+    expect(db).toContain("setPlatformDefaultLanguage");
   });
 
   it("يحمي تعديل الإعداد ويترجم تبويبات الإدارة وفق اللغة", () => {

@@ -25,7 +25,7 @@ export async function listVendorAccountLinks() {
     .orderBy(desc(users.updatedAt));
 }
 
-export async function linkVendorAccount(userId: number, vendorId: string) {
+export async function linkVendorAccount(userId: string, vendorId: string) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً");
   const target = await db
@@ -43,7 +43,7 @@ export async function linkVendorAccount(userId: number, vendorId: string) {
 }
 
 /** Stores a per-admin read state without changing the operational status of the source record. */
-export async function listAdminNotificationReadKeys(adminUserId: number) {
+export async function listAdminNotificationReadKeys(adminUserId: string) {
   const db = await getDb();
   if (!db) return [];
   const rows = await db
@@ -53,11 +53,11 @@ export async function listAdminNotificationReadKeys(adminUserId: number) {
   return rows.map((row) => row.notificationKey);
 }
 
-const adminReadId = (adminUserId: number, notificationKey: string) =>
+const adminReadId = (adminUserId: string, notificationKey: string) =>
   `anr_${adminUserId}_${notificationKey}`;
 
 export async function setAdminNotificationReadStatus(
-  adminUserId: number,
+  adminUserId: string,
   notificationKey: string,
   isRead: boolean
 ) {
@@ -77,7 +77,7 @@ export async function setAdminNotificationReadStatus(
 }
 
 export async function markAllAdminNotificationsRead(
-  adminUserId: number,
+  adminUserId: string,
   notificationKeys: string[]
 ) {
   const keys = Array.from(new Set(notificationKeys));
@@ -176,7 +176,7 @@ export async function createAdminManagedUser(user: InsertUser) {
 }
 
 export async function updateAdminManagedUser(
-  id: number,
+  id: string,
   updates: Partial<InsertUser>
 ) {
   const db = await getDb();

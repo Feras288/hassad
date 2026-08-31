@@ -12,7 +12,7 @@ export default function AdminVendorAccountLinks() {
   const utils = trpc.useUtils();
   const accountsQuery = trpc.vendorAccounts.adminList.useQuery();
   const vendorsQuery = trpc.adminManagement.vendors.list.useQuery(undefined, { retry: false });
-  const [assignments, setAssignments] = useState<Record<number, string>>({});
+  const [assignments, setAssignments] = useState<Record<string, string>>({});
   const linkMutation = trpc.vendorAccounts.link.useMutation({
     onSuccess: () => { utils.vendorAccounts.adminList.invalidate(); toast.success("تم ربط حساب المورد بنجاح"); },
     onError: () => toast.error("تعذر ربط الحساب"),

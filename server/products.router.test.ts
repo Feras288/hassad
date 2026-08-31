@@ -61,16 +61,20 @@ import type { TrpcContext } from "./_core/context";
 
 const adminContext = (): TrpcContext => ({
   user: {
-    id: 1,
-    openId: "catalog-admin",
+    id: "usr_catalog_admin",
     email: "admin@hassad.net",
     name: "Catalog Admin",
-    loginMethod: "manus",
+    emailVerified: true,
+    image: null,
     role: "admin",
+    banned: false,
+    banReason: null,
+    banExpires: null,
     vendorId: null,
+    preferredLanguage: "ar",
+    loginMethod: "email",
     createdAt: new Date(),
     updatedAt: new Date(),
-    lastSignedIn: new Date(),
   },
   req: { protocol: "https", headers: {} } as TrpcContext["req"],
   res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
@@ -78,16 +82,20 @@ const adminContext = (): TrpcContext => ({
 
 const vendorContext = (): TrpcContext => ({
   user: {
-    id: 2,
-    openId: "catalog-vendor",
+    id: "usr_catalog_vendor",
     email: "vendor@hassad.net",
     name: "مورد اختبار",
-    loginMethod: "manus",
+    emailVerified: true,
+    image: null,
     role: "vendor",
+    banned: false,
+    banReason: null,
+    banExpires: null,
     vendorId: "vendor-sync",
+    preferredLanguage: "ar",
+    loginMethod: "email",
     createdAt: new Date(),
     updatedAt: new Date(),
-    lastSignedIn: new Date(),
   },
   req: { protocol: "https", headers: {} } as TrpcContext["req"],
   res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
@@ -275,11 +283,11 @@ describe("products router", () => {
       notificationKeys: ["availability:par_live", "contact:ci_live"],
     });
     expect(dbMocks.setAdminNotificationReadStatus).toHaveBeenCalledWith(
-      1,
+      "usr_catalog_admin",
       "availability:par_live",
       true
     );
-    expect(dbMocks.markAllAdminNotificationsRead).toHaveBeenCalledWith(1, [
+    expect(dbMocks.markAllAdminNotificationsRead).toHaveBeenCalledWith("usr_catalog_admin", [
       "availability:par_live",
       "contact:ci_live",
     ]);

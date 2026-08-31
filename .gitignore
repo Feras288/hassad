@@ -63,6 +63,8 @@ jspm_packages/
 .project-config.json
 .manus/
 .manus-logs/
+__manus__/
+client/public/__manus__/
 
 # Optional npm cache directory
 .npm
@@ -113,7 +115,3 @@ temp/
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
-
-# Manus version file (auto-generated, not part of source)
-client/public/__manus__/version.json
-.project-config.json

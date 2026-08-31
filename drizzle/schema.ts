@@ -10,32 +10,66 @@ import {
 } from "drizzle-orm/mysql-core";
 
 /**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
+ * Core user table backing Better Auth flow.
  * Columns use camelCase to match both database fields and generated types.
  */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
-  id: int("id").autoincrement().primaryKey(),
-  /** External OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
-  name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
+  id: varchar("id", { length: 64 }).primaryKey(),
+  name: text("name").notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  emailVerified: boolean("emailVerified").default(false).notNull(),
+  image: text("image"),
   role: mysqlEnum("role", ["user", "admin", "vendor"])
     .default("user")
     .notNull(),
+  banned: boolean("banned").default(false),
+  banReason: text("banReason"),
+  banExpires: timestamp("banExpires"),
   /** Links an authenticated supplier account to the vendorId used in the live catalog. */
   vendorId: varchar("vendorId", { length: 64 }),
   preferredLanguage: mysqlEnum("preferredLanguage", ["ar", "en"])
     .notNull()
     .default("ar"),
+  loginMethod: varchar("loginMethod", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+});
+
+export const sessions = mysqlTable("sessions", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  ipAddress: text("ipAddress"),
+  userAgent: text("userAgent"),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  impersonatedBy: text("impersonatedBy"),
+});
+
+export const accounts = mysqlTable("accounts", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  accountId: varchar("accountId", { length: 255 }).notNull(),
+  providerId: varchar("providerId", { length: 64 }).notNull(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  accessToken: text("accessToken"),
+  refreshToken: text("refreshToken"),
+  idToken: text("idToken"),
+  accessTokenExpiresAt: timestamp("accessTokenExpiresAt"),
+  refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt"),
+  scope: text("scope"),
+  password: text("password"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const verifications = mysqlTable("verifications", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  identifier: varchar("identifier", { length: 255 }).notNull(),
+  value: varchar("value", { length: 255 }).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 /** Platform-level values controlled by administrators. */
@@ -47,11 +81,17 @@ export const platformSettings = mysqlTable("platform_settings", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type InsertSession = typeof sessions.$inferInsert;
+export type Account = typeof accounts.$inferSelect;
+export type InsertAccount = typeof accounts.$inferInsert;
+export type Verification = typeof verifications.$inferSelect;
+export type InsertVerification = typeof verifications.$inferInsert;
 
 /** Registered commercial accounts allowed to view wholesale terms and request crop quotations. */
 export const businessBuyerProfiles = mysqlTable("business_buyer_profiles", {
   id: varchar("id", { length: 64 }).primaryKey(),
-  userId: int("userId").notNull().unique(),
+  userId: varchar("userId", { length: 64 }).notNull().unique(),
   businessType: mysqlEnum("businessType", [
     "company",
     "trader",
@@ -65,7 +105,7 @@ export const businessBuyerProfiles = mysqlTable("business_buyer_profiles", {
   status: mysqlEnum("status", ["pending", "approved", "rejected", "suspended"])
     .notNull()
     .default("pending"),
-  reviewedBy: int("reviewedBy"),
+  reviewedBy: varchar("reviewedBy", { length: 64 }),
   reviewedAt: timestamp("reviewedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -78,7 +118,7 @@ export type InsertBusinessBuyerProfile =
 /** Farmer-owned crop offers for the B2B produce marketplace. */
 export const produceListings = mysqlTable("produce_listings", {
   id: varchar("id", { length: 64 }).primaryKey(),
-  farmerId: int("farmerId").notNull(),
+  farmerId: varchar("farmerId", { length: 64 }).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   cropType: varchar("cropType", { length: 120 }).notNull(),
   variety: varchar("variety", { length: 160 }),
@@ -117,7 +157,7 @@ export type InsertProduceListing = typeof produceListings.$inferInsert;
 export const produceQuoteRequests = mysqlTable("produce_quote_requests", {
   id: varchar("id", { length: 64 }).primaryKey(),
   listingId: varchar("listingId", { length: 64 }).notNull(),
-  buyerId: int("buyerId").notNull(),
+  buyerId: varchar("buyerId", { length: 64 }).notNull(),
   requestedQuantity: int("requestedQuantity").notNull(),
   message: text("message").notNull(),
   status: mysqlEnum("status", [
@@ -141,7 +181,7 @@ export type InsertProduceQuoteRequest =
 export const produceQuoteMessages = mysqlTable("produce_quote_messages", {
   id: varchar("id", { length: 64 }).primaryKey(),
   quoteRequestId: varchar("quoteRequestId", { length: 64 }).notNull(),
-  senderId: int("senderId").notNull(),
+  senderId: varchar("senderId", { length: 64 }).notNull(),
   message: text("message").notNull(),
   proposedUnitPrice: int("proposedUnitPrice"),
   readAt: timestamp("readAt"),
@@ -158,8 +198,8 @@ export const produceQuoteNotifications = mysqlTable(
   {
     id: varchar("id", { length: 64 }).primaryKey(),
     quoteRequestId: varchar("quoteRequestId", { length: 64 }).notNull(),
-    recipientId: int("recipientId").notNull(),
-    actorId: int("actorId").notNull(),
+    recipientId: varchar("recipientId", { length: 64 }).notNull(),
+    actorId: varchar("actorId", { length: 64 }).notNull(),
     type: mysqlEnum("type", [
       "status_change",
       "new_message",
@@ -181,7 +221,7 @@ export type InsertProduceQuoteNotification =
 /** Customer appointments with agricultural service providers. Provider IDs match public provider profile IDs. */
 export const serviceBookings = mysqlTable("service_bookings", {
   id: varchar("id", { length: 64 }).primaryKey(),
-  customerId: int("customerId").notNull(),
+  customerId: varchar("customerId", { length: 64 }).notNull(),
   providerId: varchar("providerId", { length: 96 }).notNull(),
   providerName: varchar("providerName", { length: 255 }).notNull(),
   providerAvatar: text("providerAvatar"),
@@ -220,7 +260,7 @@ export type InsertServiceBooking = typeof serviceBookings.$inferInsert;
 /** Direct customer-provider conversation, persisted separately from wholesale price negotiations. */
 export const serviceConversations = mysqlTable("service_conversations", {
   id: varchar("id", { length: 64 }).primaryKey(),
-  customerId: int("customerId").notNull(),
+  customerId: varchar("customerId", { length: 64 }).notNull(),
   providerId: varchar("providerId", { length: 96 }).notNull(),
   providerName: varchar("providerName", { length: 255 }).notNull(),
   providerAvatar: text("providerAvatar"),
@@ -239,7 +279,7 @@ export const serviceConversationMessages = mysqlTable(
   {
     id: varchar("id", { length: 64 }).primaryKey(),
     conversationId: varchar("conversationId", { length: 64 }).notNull(),
-    senderId: int("senderId").notNull(),
+    senderId: varchar("senderId", { length: 64 }).notNull(),
     message: text("message").notNull(),
     readAt: timestamp("readAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -524,7 +564,7 @@ export type InsertContactInquiry = typeof contactInquiries.$inferInsert;
 /** Per-admin read state for alerts that are derived from live operational records. */
 export const adminNotificationReads = mysqlTable("admin_notification_reads", {
   id: varchar("id", { length: 160 }).primaryKey(),
-  adminUserId: int("adminUserId").notNull(),
+  adminUserId: varchar("adminUserId", { length: 64 }).notNull(),
   notificationKey: varchar("notificationKey", { length: 128 }).notNull(),
   readAt: timestamp("readAt").defaultNow().notNull(),
 });
@@ -550,7 +590,7 @@ const cancellationStatus = [
 export const commerceOrders = mysqlTable("commerce_orders", {
   id: varchar("id", { length: 64 }).primaryKey(),
   orderNumber: varchar("orderNumber", { length: 32 }).notNull().unique(),
-  customerId: int("customerId"),
+  customerId: varchar("customerId", { length: 64 }),
   customerName: varchar("customerName", { length: 160 }).notNull(),
   customerPhone: varchar("customerPhone", { length: 32 }).notNull(),
   customerEmail: varchar("customerEmail", { length: 320 }),
@@ -615,7 +655,7 @@ export const customerOrderNotifications = mysqlTable(
   "customer_order_notifications",
   {
     id: varchar("id", { length: 64 }).primaryKey(),
-    customerId: int("customerId").notNull(),
+    customerId: varchar("customerId", { length: 64 }).notNull(),
     orderId: varchar("orderId", { length: 64 }).notNull(),
     type: mysqlEnum("type", ["order_status", "shipment_update"])
       .notNull()
@@ -652,7 +692,7 @@ export const commerceOrderDeliveryRatings = mysqlTable(
   {
     id: varchar("id", { length: 64 }).primaryKey(),
     orderId: varchar("orderId", { length: 64 }).notNull().unique(),
-    customerId: int("customerId").notNull(),
+    customerId: varchar("customerId", { length: 64 }).notNull(),
     rating: int("rating").notNull(),
     comment: text("comment"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),

@@ -23,7 +23,7 @@ const csvCell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}
 
 function Badge({ status }: { status: Status }) { return <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold ${STATUS[status].tone}`}>{STATUS[status].label}</span>; }
 
-function CreateOrder({ customers, vendors, products, saving, close, submit }: { customers: Array<{ id: number; name: string; email: string | null }>; vendors: Array<{ id: string; name: string; category: string }>; products: Array<{ id: string; vendorId: string; name: string; price: number; unit: string; status: string }>; saving: boolean; close: () => void; submit: (input: unknown) => void }) {
+function CreateOrder({ customers, vendors, products, saving, close, submit }: { customers: Array<{ id: string; name: string; email: string | null }>; vendors: Array<{ id: string; name: string; category: string }>; products: Array<{ id: string; vendorId: string; name: string; price: number; unit: string; status: string }>; saving: boolean; close: () => void; submit: (input: unknown) => void }) {
   const [customerId, setCustomerId] = useState("");
   const [name, setName] = useState(""); const [phone, setPhone] = useState(""); const [email, setEmail] = useState("");
   const [city, setCity] = useState(""); const [district, setDistrict] = useState(""); const [street, setStreet] = useState("");
@@ -33,7 +33,7 @@ function CreateOrder({ customers, vendors, products, saving, close, submit }: { 
   const selectedLines = lines.flatMap((line) => { const product = products.find((entry) => entry.id === line.productId); return product ? [{ product, quantity: line.quantity }] : []; });
   const subtotal = selectedLines.reduce((total, line) => total + line.product.price * line.quantity, 0);
   const total = Math.max(0, subtotal + shippingCost - discount);
-  const selectCustomer = (id: string) => { setCustomerId(id); const customer = customers.find((item) => item.id === Number(id)); if (customer) { setName(customer.name); setEmail(customer.email ?? ""); } };
+  const selectCustomer = (id: string) => { setCustomerId(id); const customer = customers.find((item) => item.id === id); if (customer) { setName(customer.name); setEmail(customer.email ?? ""); } };
   const updateLine = (index: number, patch: Partial<DraftLine>) => setLines((current) => current.map((line, lineIndex) => lineIndex === index ? { ...line, ...patch } : line));
   const save = () => {
     const items = lines.filter((line) => line.productId && line.quantity > 0);

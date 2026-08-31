@@ -1,6 +1,6 @@
-import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "../_core/cookies";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { fromNodeHeaders } from "better-auth/node";
+import { auth } from "../_core/auth";
 import {
   getAccountLanguagePreference,
   getHeroStatsSettings,
@@ -26,9 +26,14 @@ const heroStatsSettingsSchema = z.object({
 
 export const authRouter = router({
   me: publicProcedure.query((opts) => opts.ctx.user),
-  logout: publicProcedure.mutation(({ ctx }) => {
-    const cookieOptions = getSessionCookieOptions(ctx.req);
-    ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+  logout: publicProcedure.mutation(async ({ ctx }) => {
+    try {
+      await auth.api.signOut({
+        headers: fromNodeHeaders(ctx.req.headers),
+      });
+    } catch {
+      // Ignore if session already signed out
+    }
     return {
       success: true,
     } as const;

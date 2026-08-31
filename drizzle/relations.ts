@@ -1,6 +1,9 @@
 import { relations } from "drizzle-orm";
 import {
   users,
+  sessions,
+  accounts,
+  verifications,
   platformSettings,
   businessBuyerProfiles,
   produceListings,
@@ -32,6 +35,8 @@ import {
 
 // ─── Users ──────────────────────────────────────────────────────────────────────
 export const usersRelations = relations(users, ({ one, many }) => ({
+  sessions: many(sessions),
+  accounts: many(accounts),
   businessBuyerProfile: one(businessBuyerProfiles, {
     fields: [users.id],
     references: [businessBuyerProfiles.userId],
@@ -43,6 +48,20 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   adminNotificationReads: many(adminNotificationReads),
   customerOrderNotifications: many(customerOrderNotifications),
   commerceOrderDeliveryRatings: many(commerceOrderDeliveryRatings),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const accountsRelations = relations(accounts, ({ one }) => ({
+  user: one(users, {
+    fields: [accounts.userId],
+    references: [users.id],
+  }),
 }));
 
 // ─── Business Buyer Profiles ────────────────────────────────────────────────────

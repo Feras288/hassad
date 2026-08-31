@@ -24,7 +24,7 @@ export async function createServiceBooking(booking: InsertServiceBooking) {
   return booking;
 }
 
-export async function listServiceBookingsForCustomer(customerId: number) {
+export async function listServiceBookingsForCustomer(customerId: string) {
   const db = await getDb();
   if (!db) return [];
   return db
@@ -94,7 +94,7 @@ export async function updateServiceBookingStatus(input: {
 
 export async function cancelServiceBooking(
   bookingId: string,
-  customerId: number
+  customerId: string
 ) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً");
@@ -121,7 +121,7 @@ export async function cancelServiceBooking(
 }
 
 export async function getServiceConversationForCustomerAndProvider(
-  customerId: number,
+  customerId: string,
   providerId: string
 ) {
   const db = await getDb();
@@ -148,7 +148,7 @@ export async function createServiceConversation(
   return conversation;
 }
 
-export async function listServiceConversationsForCustomer(customerId: number) {
+export async function listServiceConversationsForCustomer(customerId: string) {
   const db = await getDb();
   if (!db) return [];
   return db
@@ -204,7 +204,7 @@ export async function createServiceConversationMessage(
 
 export async function markServiceConversationMessagesRead(
   conversationId: string,
-  recipientId: number
+  recipientId: string
 ) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً");

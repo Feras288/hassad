@@ -41,7 +41,7 @@ export async function setProduceMarketplaceEnabled(
     .onDuplicateKeyUpdate({ set: { value: enabled ? "true" : "false" } });
 }
 
-export async function getBusinessBuyerProfile(userId: number) {
+export async function getBusinessBuyerProfile(userId: string) {
   const db = await getDb();
   if (!db) return null;
   const rows = await db
@@ -114,7 +114,7 @@ export async function listBusinessBuyerProfiles() {
 export async function updateBusinessBuyerProfileStatus(
   id: string,
   status: "approved" | "rejected" | "suspended",
-  reviewedBy: number
+  reviewedBy: string
 ) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً");
@@ -161,7 +161,7 @@ export async function listPublishedProduceListings() {
     .orderBy(desc(produceListings.createdAt));
 }
 
-export async function listFarmerProduceListings(farmerId: number) {
+export async function listFarmerProduceListings(farmerId: string) {
   const db = await getDb();
   if (!db) return [];
   return db
@@ -191,7 +191,7 @@ export async function createProduceListing(listing: InsertProduceListing) {
 
 export async function updateProduceListing(
   id: string,
-  farmerId: number,
+  farmerId: string,
   updates: Partial<InsertProduceListing>
 ) {
   const db = await getDb();
@@ -246,7 +246,7 @@ export async function getProduceQuoteRequest(id: string) {
   return rows[0] ?? null;
 }
 
-export async function listProduceQuoteRequestsForFarmer(farmerId: number) {
+export async function listProduceQuoteRequestsForFarmer(farmerId: string) {
   const db = await getDb();
   if (!db) return [];
   return db
@@ -277,7 +277,7 @@ export async function listProduceQuoteRequestsForFarmer(farmerId: number) {
     .orderBy(desc(produceQuoteRequests.updatedAt));
 }
 
-export async function listProduceQuoteRequestsForBuyer(buyerId: number) {
+export async function listProduceQuoteRequestsForBuyer(buyerId: string) {
   const db = await getDb();
   if (!db) return [];
   return db
@@ -344,7 +344,7 @@ export async function createProduceQuoteMessage(
 
 export async function markProduceQuoteMessagesRead(
   quoteRequestId: string,
-  recipientId: number
+  recipientId: string
 ) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً");
@@ -381,7 +381,7 @@ export async function createProduceQuoteNotification(
   return notification;
 }
 
-export async function listProduceQuoteNotifications(recipientId: number) {
+export async function listProduceQuoteNotifications(recipientId: string) {
   const db = await getDb();
   if (!db) return [];
   return db
@@ -394,7 +394,7 @@ export async function listProduceQuoteNotifications(recipientId: number) {
 
 export async function markProduceQuoteNotificationRead(
   id: string,
-  recipientId: number
+  recipientId: string
 ) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة حالياً");
