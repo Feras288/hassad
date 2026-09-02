@@ -25,13 +25,17 @@ export function useAuth(options?: UseAuthOptions) {
     } catch (error) {
       console.error("Sign out error:", error);
     } finally {
+      // Clear the entire query cache, not just auth.me, so no other user's data
+      // (orders, notifications, loyalty, etc.) lingers on a shared device.
       utils.auth.me.setData(undefined, null);
-      await utils.auth.me.invalidate();
+      await utils.invalidate();
     }
   }, [utils]);
 
-  const user = meQuery.data ?? (session.data?.user ? (session.data.user as any) : null);
-  const loading = session.isPending || (Boolean(session.data?.user) && meQuery.isLoading);
+  const user =
+    meQuery.data ?? (session.data?.user ? (session.data.user as any) : null);
+  const loading =
+    session.isPending || (Boolean(session.data?.user) && meQuery.isLoading);
   const isAuthenticated = Boolean(user);
 
   useEffect(() => {
@@ -46,12 +50,7 @@ export function useAuth(options?: UseAuthOptions) {
     } else {
       startLogin(window.location.pathname);
     }
-  }, [
-    redirectOnUnauthenticated,
-    redirectPath,
-    loading,
-    isAuthenticated,
-  ]);
+  }, [redirectOnUnauthenticated, redirectPath, loading, isAuthenticated]);
 
   return {
     user,

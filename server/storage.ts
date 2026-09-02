@@ -32,7 +32,30 @@ function getBucket(): string {
 }
 
 function normalizeKey(relKey: string): string {
-  return relKey.replace(/^\/+/, "");
+  const stripped = relKey.replace(/^\/+/, "");
+  if (stripped.split("/").some(segment => segment === "..")) {
+    throw new Error(
+      "Invalid storage key: path traversal segments are not allowed"
+    );
+  }
+  return stripped;
+}
+
+// Every prefix any storagePut() call site in the app actually writes to (all intentionally
+// public content: admin/content assets, produce listing photos and quality certificates).
+// The /storage/* proxy uses this as an allowlist so it can't be used to fetch arbitrary S3 keys.
+export const PUBLIC_STORAGE_PREFIXES = [
+  "admin/assets/",
+  "content/article-covers/",
+  "content/article-inline/",
+  "produce/listings/",
+  "produce/certificates/",
+] as const;
+
+export function isPublicStorageKey(relKey: string): boolean {
+  const stripped = relKey.replace(/^\/+/, "");
+  if (stripped.split("/").some(segment => segment === "..")) return false;
+  return PUBLIC_STORAGE_PREFIXES.some(prefix => stripped.startsWith(prefix));
 }
 
 function appendHashSuffix(relKey: string): string {

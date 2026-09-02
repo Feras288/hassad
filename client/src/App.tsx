@@ -184,7 +184,7 @@ function Router() {
         <Route path="/produce-marketplace/:id" component={ProduceMarketplacePage} />
         <Route path="/cart" component={CartPage} />
         <Route path="/supplier-pending" component={SupplierPending} />
-        <Route path="/suppliers-map">{() => <AdminVendorsProvider><SuppliersMap /></AdminVendorsProvider>}</Route>
+        <Route path="/suppliers-map">{() => <AdminRouteGuard><SuppliersMap /></AdminRouteGuard>}</Route>
         <Route path="/checkout" component={CheckoutPage} />
         <Route path="/order-confirmation" component={OrderConfirmationPage} />
         <Route path="/dashboard/orders/:id">{() => <AuthRouteGuard><DashboardOrderDetail /></AuthRouteGuard>}</Route>

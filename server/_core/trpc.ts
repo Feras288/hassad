@@ -1,10 +1,23 @@
-import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
+import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from "@shared/const";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
+import { ENV } from "./env";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
+  errorFormatter({ shape, error, ctx }) {
+    // Correlate server-side error logs with the client-visible x-request-id, without logging PII.
+    if (ctx?.requestId) {
+      console.error(`[${ctx.requestId}] ${error.code}: ${error.message}`);
+    }
+    // Routers throw plain Error(...) with user-facing Arabic messages by convention, so the
+    // message itself must reach the client — only strip the stack trace/debug data in production.
+    if (ENV.isProduction) {
+      return { ...shape, data: { ...shape.data, stack: undefined } };
+    }
+    return shape;
+  },
 });
 
 export const router = t.router;
@@ -53,7 +66,7 @@ export const adminProcedure = t.procedure.use(
       });
     }
 
-    if (ctx.user.role !== 'admin') {
+    if (ctx.user.role !== "admin") {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
@@ -63,7 +76,7 @@ export const adminProcedure = t.procedure.use(
         user: ctx.user,
       },
     });
-  }),
+  })
 );
 
 /** Supplier-only procedures: the account must be mapped to a catalog vendorId. */
@@ -85,7 +98,10 @@ export const vendorProcedure = t.procedure.use(
     }
 
     if (ctx.user.role !== "vendor" || !ctx.user.vendorId) {
-      throw new TRPCError({ code: "FORBIDDEN", message: "حساب المورد غير مرتبط بملف مورد معتمد" });
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "حساب المورد غير مرتبط بملف مورد معتمد",
+      });
     }
 
     return next({
@@ -94,5 +110,5 @@ export const vendorProcedure = t.procedure.use(
         user: ctx.user,
       },
     });
-  }),
+  })
 );

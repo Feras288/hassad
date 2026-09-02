@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import helmet from "helmet";
 import { toNodeHandler } from "better-auth/node";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { auth } from "./auth";
@@ -9,6 +10,11 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { ENV } from "./env";
+import {
+  createApiRateLimiter,
+  createAuthRateLimiter,
+  requestIdMiddleware,
+} from "./security";
 import { serveStatic, setupVite } from "./vite";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -34,6 +40,11 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
+  // Security headers. CSP is left to a dedicated follow-up once every external asset
+  // domain (S3, Google Maps, fonts) is enumerated, to avoid breaking legitimate content.
+  app.use(helmet({ contentSecurityPolicy: false }));
+  app.use(requestIdMiddleware);
+
   // Configure trust proxy based on explicit TRUST_PROXY setting
   if (ENV.trustProxy !== undefined && ENV.trustProxy.trim().length > 0) {
     const rawVal = ENV.trustProxy.trim();
@@ -55,7 +66,7 @@ async function startServer() {
   }
 
   // Mount Better Auth handler BEFORE body-parsing middleware
-  app.all("/api/auth/*", toNodeHandler(auth));
+  app.all("/api/auth/*", createAuthRateLimiter(), toNodeHandler(auth));
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
@@ -64,6 +75,7 @@ async function startServer() {
   // tRPC API
   app.use(
     "/api/trpc",
+    createApiRateLimiter(),
     createExpressMiddleware({
       router: appRouter,
       createContext,

@@ -8,6 +8,7 @@ export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
   user: User | null;
+  requestId?: string;
 };
 
 export async function createContext(
@@ -21,7 +22,9 @@ export async function createContext(
     });
 
     if (session?.user?.id) {
-      user = (await db.getUserById(session.user.id)) ?? (session.user as unknown as User);
+      user =
+        (await db.getUserById(session.user.id)) ??
+        (session.user as unknown as User);
     }
   } catch {
     // Authentication is optional for public procedures.
@@ -32,5 +35,6 @@ export async function createContext(
     req: opts.req,
     res: opts.res,
     user,
+    requestId: (opts.req as typeof opts.req & { requestId?: string }).requestId,
   };
 }
