@@ -204,6 +204,13 @@
       "when": 1788300000000,
       "tag": "0028_add_issuer_to_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1788400000000,
+      "tag": "0029_add_production_indexes",
+      "breakpoints": true
     }
   ]
 }

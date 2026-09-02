@@ -46,7 +46,9 @@ export const sessions = mysqlTable("sessions", {
   userAgent: text("userAgent"),
   userId: varchar("userId", { length: 64 }).notNull(),
   impersonatedBy: text("impersonatedBy"),
-});
+}, (table) => [
+  index("sessions_user_id_idx").on(table.userId),
+]);
 
 export const accounts = mysqlTable("accounts", {
   id: varchar("id", { length: 64 }).primaryKey(),
@@ -63,7 +65,10 @@ export const accounts = mysqlTable("accounts", {
   issuer: text("issuer"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("accounts_user_id_idx").on(table.userId),
+  index("accounts_provider_id_account_id_idx").on(table.providerId, table.accountId),
+]);
 
 export const verifications = mysqlTable("verifications", {
   id: varchar("id", { length: 64 }).primaryKey(),
@@ -72,7 +77,9 @@ export const verifications = mysqlTable("verifications", {
   expiresAt: timestamp("expiresAt").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("verifications_identifier_value_idx").on(table.identifier, table.value),
+]);
 
 /** Platform-level values controlled by administrators. */
 export const platformSettings = mysqlTable("platform_settings", {
@@ -150,7 +157,10 @@ export const produceListings = mysqlTable("produce_listings", {
     .default("draft"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("produce_listings_status_created_at_idx").on(table.status, table.createdAt),
+  index("produce_listings_farmer_id_updated_at_idx").on(table.farmerId, table.updatedAt),
+]);
 
 export type ProduceListing = typeof produceListings.$inferSelect;
 export type InsertProduceListing = typeof produceListings.$inferInsert;
@@ -173,7 +183,10 @@ export const produceQuoteRequests = mysqlTable("produce_quote_requests", {
     .default("new"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("produce_quote_requests_buyer_id_updated_at_idx").on(table.buyerId, table.updatedAt),
+  index("produce_quote_requests_listing_id_updated_at_idx").on(table.listingId, table.updatedAt),
+]);
 
 export type ProduceQuoteRequest = typeof produceQuoteRequests.$inferSelect;
 export type InsertProduceQuoteRequest =
@@ -188,7 +201,9 @@ export const produceQuoteMessages = mysqlTable("produce_quote_messages", {
   proposedUnitPrice: int("proposedUnitPrice"),
   readAt: timestamp("readAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("produce_quote_messages_quote_request_id_created_at_idx").on(table.quoteRequestId, table.createdAt),
+]);
 
 export type ProduceQuoteMessage = typeof produceQuoteMessages.$inferSelect;
 export type InsertProduceQuoteMessage =
@@ -212,7 +227,10 @@ export const produceQuoteNotifications = mysqlTable(
     isRead: boolean("isRead").notNull().default(false),
     readAt: timestamp("readAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-  }
+  },
+  (table) => [
+    index("produce_quote_notifications_recipient_id_created_at_idx").on(table.recipientId, table.createdAt),
+  ]
 );
 
 export type ProduceQuoteNotification =
@@ -254,7 +272,10 @@ export const serviceBookings = mysqlTable("service_bookings", {
   providerNote: text("providerNote"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("service_bookings_customer_id_scheduled_at_idx").on(table.customerId, table.scheduledAt),
+  index("service_bookings_provider_id_scheduled_at_idx").on(table.providerId, table.scheduledAt),
+]);
 
 export type ServiceBooking = typeof serviceBookings.$inferSelect;
 export type InsertServiceBooking = typeof serviceBookings.$inferInsert;
@@ -269,7 +290,10 @@ export const serviceConversations = mysqlTable("service_conversations", {
   subject: varchar("subject", { length: 500 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("service_conversations_customer_id_updated_at_idx").on(table.customerId, table.updatedAt),
+  index("service_conversations_provider_id_updated_at_idx").on(table.providerId, table.updatedAt),
+]);
 
 export type ServiceConversation = typeof serviceConversations.$inferSelect;
 export type InsertServiceConversation =
@@ -285,7 +309,10 @@ export const serviceConversationMessages = mysqlTable(
     message: text("message").notNull(),
     readAt: timestamp("readAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-  }
+  },
+  (table) => [
+    index("service_conv_msgs_conv_id_created_at_idx").on(table.conversationId, table.createdAt),
+  ]
 );
 
 export type ServiceConversationMessage =
@@ -318,7 +345,14 @@ export const adminVendorProfiles = mysqlTable("admin_vendor_profiles", {
   bankIban: varchar("bankIban", { length: 120 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("admin_vendor_profiles_type_status_verified_created_idx").on(
+    table.type,
+    table.status,
+    table.verified,
+    table.createdAt
+  ),
+]);
 
 export const catalogCategories = mysqlTable("catalog_categories", {
   id: varchar("id", { length: 64 }).primaryKey(),
@@ -397,6 +431,10 @@ export const catalogProducts = mysqlTable("catalog_products", {
     table.rating,
     table.createdAt
   ),
+  index("catalog_products_vendor_id_updated_at_idx").on(
+    table.vendorId,
+    table.updatedAt
+  ),
 ]);
 
 export type CatalogProduct = typeof catalogProducts.$inferSelect;
@@ -463,7 +501,13 @@ export const productAvailabilityRequestMatches = mysqlTable(
       .default("suggested"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  }
+  },
+  (table) => [
+    index("prod_avail_matches_request_id_match_score_idx").on(
+      table.requestId,
+      table.matchScore
+    ),
+  ]
 );
 
 export type ProductAvailabilityRequestMatch =
@@ -500,6 +544,11 @@ export const productQuestions = mysqlTable("product_questions", {
     table.status,
     table.createdAt
   ),
+  index("product_questions_product_id_status_answered_at_idx").on(
+    table.productId,
+    table.status,
+    table.answeredAt
+  ),
 ]);
 
 export type ProductQuestion = typeof productQuestions.$inferSelect;
@@ -533,7 +582,13 @@ export const vendorNotifications = mysqlTable("vendor_notifications", {
   readAt: timestamp("readAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("vendor_notifications_vendor_id_is_read_created_at_idx").on(
+    table.vendorId,
+    table.isRead,
+    table.createdAt
+  ),
+]);
 
 export type VendorNotification = typeof vendorNotifications.$inferSelect;
 export type InsertVendorNotification = typeof vendorNotifications.$inferInsert;
@@ -582,7 +637,9 @@ export const adminNotificationReads = mysqlTable("admin_notification_reads", {
   adminUserId: varchar("adminUserId", { length: 64 }).notNull(),
   notificationKey: varchar("notificationKey", { length: 128 }).notNull(),
   readAt: timestamp("readAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("admin_notification_reads_admin_user_id_idx").on(table.adminUserId),
+]);
 
 export type AdminNotificationRead = typeof adminNotificationReads.$inferSelect;
 
@@ -700,7 +757,13 @@ export const customerOrderNotifications = mysqlTable(
     isRead: boolean("isRead").notNull().default(false),
     readAt: timestamp("readAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-  }
+  },
+  (table) => [
+    index("customer_order_notifications_customer_id_created_at_idx").on(
+      table.customerId,
+      table.createdAt
+    ),
+  ]
 );
 
 /** Supplier-facing alerts for cancellation requests requiring a decision. */
@@ -718,7 +781,13 @@ export const vendorOrderNotifications = mysqlTable(
     isRead: boolean("isRead").notNull().default(false),
     readAt: timestamp("readAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-  }
+  },
+  (table) => [
+    index("vendor_order_notifications_vendor_id_created_at_idx").on(
+      table.vendorId,
+      table.createdAt
+    ),
+  ]
 );
 
 /** Verified delivery feedback: one customer submission per delivered order. */
@@ -769,7 +838,18 @@ export const contentArticles = mysqlTable("content_articles", {
   publishedAt: timestamp("publishedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("content_articles_status_published_created_idx").on(
+    table.status,
+    table.publishedAt,
+    table.createdAt
+  ),
+  index("content_articles_status_view_count_published_idx").on(
+    table.status,
+    table.viewCount,
+    table.publishedAt
+  ),
+]);
 
 export type ContentArticle = typeof contentArticles.$inferSelect;
 export type InsertContentArticle = typeof contentArticles.$inferInsert;
