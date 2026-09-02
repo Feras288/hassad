@@ -59,6 +59,7 @@ export const accounts = mysqlTable("accounts", {
   refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt"),
   scope: text("scope"),
   password: text("password"),
+  issuer: text("issuer"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

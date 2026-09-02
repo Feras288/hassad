@@ -3,7 +3,7 @@
 // Design: Modern SaaS, RTL, Dark green #2E7D32, Tajawal font
 // Tabs: Personal Info, Addresses, Security, Notifications Prefs
 // ================================================================
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import {
   User,
@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 
 // ── Types ──────────────────────────────────────────────────────
 interface Address {
@@ -49,52 +51,19 @@ interface Address {
   isDefault: boolean;
 }
 
-// ── Initial Data ───────────────────────────────────────────────
-const initialProfile = {
-  firstName: "محمد",
-  lastName: "بن سعد الغامدي",
-  phone: "0501234567",
-  email: "mohammed@example.com",
-  nationalId: "1234567890",
-  farmName: "مزرعة الأمل",
+const emptyProfile = {
+  firstName: "",
+  lastName: "",
+  phone: "",
+  email: "",
+  nationalId: "",
+  farmName: "",
   region: "الرياض",
-  city: "الرياض",
-  bio: "مزارع متخصص في زراعة القمح والذرة منذ أكثر من 15 عاماً في منطقة الرياض.",
+  city: "",
+  bio: "",
   avatar: "",
-  memberSince: "مارس 2023",
-  totalOrders: 24,
-  totalSpent: "١٢,٤٠٠",
-  rating: 4.8,
+  memberSince: "",
 };
-
-const initialAddresses: Address[] = [
-  {
-    id: "addr1",
-    label: "المزرعة الرئيسية",
-    type: "farm",
-    recipient: "محمد بن سعد الغامدي",
-    phone: "0501234567",
-    region: "الرياض",
-    city: "الرياض",
-    district: "حي الملقا",
-    street: "طريق الملك فهد",
-    building: "مبنى 12",
-    postalCode: "12345",
-    isDefault: true,
-  },
-  {
-    id: "addr2",
-    label: "المستودع",
-    type: "warehouse",
-    recipient: "محمد الغامدي",
-    phone: "0551234567",
-    region: "الرياض",
-    city: "الخرج",
-    district: "المنطقة الصناعية",
-    street: "شارع الصناعة",
-    isDefault: false,
-  },
-];
 
 const saudiRegions = ["الرياض", "مكة المكرمة", "المدينة المنورة", "القصيم", "المنطقة الشرقية", "عسير", "تبوك", "حائل", "الحدود الشمالية", "جازان", "نجران", "الباحة", "الجوف"];
 
@@ -408,12 +377,28 @@ function AddressModal({
 
 // ── Main Page ──────────────────────────────────────────────────
 export default function DashboardProfile() {
+  const { user } = useAuth();
   const { language, setLanguage, isEnglish } = useLanguage();
+  const myOrdersQuery = trpc.orders.mine.useQuery(undefined, {
+    enabled: Boolean(user),
+    retry: false,
+  });
+
   const [activeTab, setActiveTab] = useState<"info" | "addresses" | "security" | "notifications">("info");
-  const [profile, setProfile] = useState(initialProfile);
+  const [profile, setProfile] = useState(emptyProfile);
   const [editingInfo, setEditingInfo] = useState(false);
-  const [infoForm, setInfoForm] = useState(initialProfile);
-  const [addresses, setAddresses] = useState<Address[]>(initialAddresses);
+  const [infoForm, setInfoForm] = useState(emptyProfile);
+
+  const [addresses, setAddresses] = useState<Address[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("hasad_user_addresses");
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return [];
+  });
+
   const [addressModal, setAddressModal] = useState<{ open: boolean; address: Address | null }>({ open: false, address: null });
 
   // Security state
@@ -434,6 +419,37 @@ export default function DashboardProfile() {
     push: true,
   });
 
+  useEffect(() => {
+    if (user) {
+      const rawName = (user.name || "").trim();
+      const parts = rawName ? rawName.split(/\s+/) : [];
+      const firstName = parts[0] || (isEnglish ? "User" : "مستخدم");
+      const lastName = parts.slice(1).join(" ");
+      const memberSince = user.createdAt
+        ? new Intl.DateTimeFormat(isEnglish ? "en-US" : "ar-SA", {
+            month: "long",
+            year: "numeric",
+          }).format(new Date(user.createdAt))
+        : (isEnglish ? "Recently" : "حديثاً");
+
+      setProfile((prev) => ({
+        ...prev,
+        firstName: prev.firstName || firstName,
+        lastName: prev.lastName || lastName,
+        email: user.email || prev.email,
+        memberSince: prev.memberSince || memberSince,
+      }));
+
+      setInfoForm((prev) => ({
+        ...prev,
+        firstName: prev.firstName || firstName,
+        lastName: prev.lastName || lastName,
+        email: user.email || prev.email,
+        memberSince: prev.memberSince || memberSince,
+      }));
+    }
+  }, [user, isEnglish]);
+
   // ── Handlers ──
   const handleSaveInfo = () => {
     setProfile(infoForm);
@@ -441,27 +457,46 @@ export default function DashboardProfile() {
     toast.success("تم حفظ البيانات الشخصية بنجاح");
   };
 
-  const handleSaveAddress = (addr: Address) => {
-    if (addr.isDefault) {
-      setAddresses((prev) =>
-        prev.map((a) => ({ ...a, isDefault: false })).map((a) => (a.id === addr.id ? addr : a))
-      );
+  const saveAddressesList = (newList: Address[]) => {
+    setAddresses(newList);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("hasad_user_addresses", JSON.stringify(newList));
+      } catch {}
     }
-    setAddresses((prev) => {
-      const exists = prev.find((a) => a.id === addr.id);
-      if (exists) return prev.map((a) => (a.id === addr.id ? addr : a));
-      return [...prev, addr];
-    });
+  };
+
+  const handleSaveAddress = (addr: Address) => {
+    let updatedList: Address[];
+    if (addr.isDefault) {
+      const resetList = addresses.map((a) => ({ ...a, isDefault: false }));
+      const exists = resetList.find((a) => a.id === addr.id);
+      if (exists) {
+        updatedList = resetList.map((a) => (a.id === addr.id ? addr : a));
+      } else {
+        updatedList = [...resetList, addr];
+      }
+    } else {
+      const exists = addresses.find((a) => a.id === addr.id);
+      if (exists) {
+        updatedList = addresses.map((a) => (a.id === addr.id ? addr : a));
+      } else {
+        updatedList = [...addresses, addr];
+      }
+    }
+    saveAddressesList(updatedList);
     setAddressModal({ open: false, address: null });
   };
 
   const handleDeleteAddress = (id: string) => {
-    setAddresses((prev) => prev.filter((a) => a.id !== id));
+    const updatedList = addresses.filter((a) => a.id !== id);
+    saveAddressesList(updatedList);
     toast.success("تم حذف العنوان");
   };
 
   const handleSetDefault = (id: string) => {
-    setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
+    const updatedList = addresses.map((a) => ({ ...a, isDefault: a.id === id }));
+    saveAddressesList(updatedList);
     toast.success("تم تعيين العنوان الافتراضي");
   };
 
@@ -495,6 +530,25 @@ export default function DashboardProfile() {
   const strengthLabels = ["", "ضعيفة", "مقبولة", "جيدة", "قوية"];
   const strengthColors = ["", "bg-red-400", "bg-yellow-400", "bg-blue-400", "bg-green-500"];
 
+  const totalOrders = myOrdersQuery.data?.length || 0;
+  const totalSpent = (myOrdersQuery.data || [])
+    .reduce((sum, o) => sum + Number(o.total || 0), 0)
+    .toLocaleString(isEnglish ? "en-US" : "ar-SA");
+
+  const displayName =
+    profile.firstName || profile.lastName
+      ? `${profile.firstName} ${profile.lastName}`.trim()
+      : user?.name || (isEnglish ? "User" : "مستخدم حصاد");
+  const avatarInitial = (displayName || "ح").charAt(0);
+  const farmOrRole =
+    profile.farmName
+      ? `${profile.farmName}${profile.city ? ` · ${profile.city}` : ""}`
+      : user?.role === "admin"
+      ? "مدير النظام"
+      : user?.role === "vendor"
+      ? "مورد معتمد"
+      : "مزارع حصاد";
+
   return (
     <DashboardLayout
       title="الملف الشخصي"
@@ -515,7 +569,7 @@ export default function DashboardProfile() {
               {/* Avatar */}
               <div className="relative">
                 <div className="w-20 h-20 rounded-2xl bg-[#C9A227] border-4 border-white shadow-lg flex items-center justify-center text-white font-bold text-2xl">
-                  {profile.firstName.charAt(0)}
+                  {avatarInitial}
                 </div>
                 <button className="absolute -bottom-1 -left-1 w-7 h-7 bg-[#2E7D32] text-white rounded-full flex items-center justify-center shadow-md hover:bg-[#1B5E20] transition-colors">
                   <Camera size={13} />
@@ -523,25 +577,25 @@ export default function DashboardProfile() {
               </div>
               {/* Name & Meta */}
               <div className="flex-1 pb-1">
-                <h2 className="text-xl font-bold text-gray-900">{profile.firstName} {profile.lastName}</h2>
-                <p className="text-sm text-gray-500">{profile.farmName} · {profile.city}</p>
+                <h2 className="text-xl font-bold text-gray-900">{displayName}</h2>
+                <p className="text-sm text-gray-500">{farmOrRole}</p>
               </div>
               {/* Stats */}
               <div className="hidden sm:flex items-center gap-6 pb-1">
                 <div className="text-center">
-                  <div className="text-lg font-bold text-[#2E7D32]">{profile.totalOrders}</div>
+                  <div className="text-lg font-bold text-[#2E7D32]">{totalOrders}</div>
                   <div className="text-xs text-gray-400">طلب</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-[#C9A227]">{profile.totalSpent}</div>
+                  <div className="text-lg font-bold text-[#C9A227]">{totalSpent}</div>
                   <div className="text-xs text-gray-400">ريال</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-gray-800 flex items-center gap-1">
-                    <Star size={14} className="text-yellow-400" fill="currentColor" />
-                    {profile.rating}
+                  <div className="text-sm font-bold text-gray-800 flex items-center gap-1">
+                    <Shield size={14} className="text-[#2E7D32]" />
+                    {user?.role === "admin" ? "مدير" : user?.role === "vendor" ? "مورد" : "مزارع"}
                   </div>
-                  <div className="text-xs text-gray-400">تقييم</div>
+                  <div className="text-xs text-gray-400">نوع الحساب</div>
                 </div>
               </div>
             </div>
@@ -597,7 +651,7 @@ export default function DashboardProfile() {
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2E7D32]/30 focus:border-[#2E7D32]"
                   />
                 ) : (
-                  <div className="px-3 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-800">{profile.firstName}</div>
+                  <div className="px-3 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-800">{profile.firstName || "—"}</div>
                 )}
               </div>
               {/* Last Name */}
@@ -611,7 +665,7 @@ export default function DashboardProfile() {
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2E7D32]/30 focus:border-[#2E7D32]"
                   />
                 ) : (
-                  <div className="px-3 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-800">{profile.lastName}</div>
+                  <div className="px-3 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-800">{profile.lastName || "—"}</div>
                 )}
               </div>
               {/* Phone */}
@@ -622,13 +676,18 @@ export default function DashboardProfile() {
                     type="tel"
                     value={infoForm.phone}
                     onChange={(e) => setInfoForm((p) => ({ ...p, phone: e.target.value }))}
+                    placeholder="05xxxxxxxx"
                     dir="ltr"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2E7D32]/30 focus:border-[#2E7D32]"
                   />
                 ) : (
                   <div className="px-3 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-800 flex items-center justify-between">
-                    <span dir="ltr">{profile.phone}</span>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 size={10} /> موثق</span>
+                    <span dir="ltr">{profile.phone || "لم يُحدد بعد"}</span>
+                    {profile.phone && (
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle2 size={10} /> مسجل
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -645,8 +704,12 @@ export default function DashboardProfile() {
                   />
                 ) : (
                   <div className="px-3 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-800 flex items-center justify-between">
-                    <span dir="ltr">{profile.email}</span>
-                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full flex items-center gap-1"><AlertCircle size={10} /> غير موثق</span>
+                    <span dir="ltr">{profile.email || "—"}</span>
+                    {user?.emailVerified ? (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 size={10} /> موثق</span>
+                    ) : (
+                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full flex items-center gap-1"><AlertCircle size={10} /> غير موثق</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -658,10 +721,11 @@ export default function DashboardProfile() {
                     type="text"
                     value={infoForm.farmName}
                     onChange={(e) => setInfoForm((p) => ({ ...p, farmName: e.target.value }))}
+                    placeholder="اسم مزرعتك أو منشأتك"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2E7D32]/30 focus:border-[#2E7D32]"
                   />
                 ) : (
-                  <div className="px-3 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-800">{profile.farmName}</div>
+                  <div className="px-3 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-800">{profile.farmName || "لم يُحدد"}</div>
                 )}
               </div>
               {/* Region */}
@@ -686,11 +750,12 @@ export default function DashboardProfile() {
                   <textarea
                     value={infoForm.bio}
                     onChange={(e) => setInfoForm((p) => ({ ...p, bio: e.target.value }))}
+                    placeholder="أضف نبذة موجزة عن نشاطك الزراعي أو خبراتك"
                     rows={3}
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2E7D32]/30 focus:border-[#2E7D32] resize-none"
                   />
                 ) : (
-                  <div className="px-3 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-800 leading-relaxed">{profile.bio}</div>
+                  <div className="px-3 py-2.5 bg-gray-50 rounded-xl text-sm text-gray-800 leading-relaxed">{profile.bio || "لا توجد نبذة تعريفية مسجلة"}</div>
                 )}
               </div>
               <div>
@@ -706,7 +771,7 @@ export default function DashboardProfile() {
             {/* Member Since */}
             <div className="mt-6 pt-5 border-t border-gray-100 flex items-center gap-2 text-sm text-gray-400">
               <CheckCircle2 size={14} className="text-[#2E7D32]" />
-              عضو منذ {profile.memberSince}
+              عضو منذ {profile.memberSince || "حديثاً"}
             </div>
           </div>
         )}

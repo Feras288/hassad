@@ -58,25 +58,25 @@ export function getActivePriceTiers(tiers: PriceTier[] | null | undefined, windo
 }
 
 /** Returns the applicable unit price for the requested quantity, falling back to the regular product price. */
-export function getTieredUnitPrice(basePrice: number, tiers: PriceTier[] | null | undefined, quantity: number, window: TierPricingWindow = {}) {
-  return getActivePriceTiers(tiers, window).reduce((currentPrice, tier) => quantity >= tier.minQuantity ? tier.unitPrice : currentPrice, basePrice);
+export function getTieredUnitPrice(basePrice: number, tiers: PriceTier[] | null | undefined, quantity: number, window: TierPricingWindow = {}, now = new Date()) {
+  return getActivePriceTiers(tiers, window, now).reduce((currentPrice, tier) => quantity >= tier.minQuantity ? tier.unitPrice : currentPrice, basePrice);
 }
 
-export function hasReachedHigherDiscountTier(basePrice: number, tiers: PriceTier[] | null | undefined, previousQuantity: number, nextQuantity: number, window: TierPricingWindow = {}) {
+export function hasReachedHigherDiscountTier(basePrice: number, tiers: PriceTier[] | null | undefined, previousQuantity: number, nextQuantity: number, window: TierPricingWindow = {}, now = new Date()) {
   if (nextQuantity <= previousQuantity) return false;
-  return getTieredUnitPrice(basePrice, tiers, nextQuantity, window) < getTieredUnitPrice(basePrice, tiers, previousQuantity, window);
+  return getTieredUnitPrice(basePrice, tiers, nextQuantity, window, now) < getTieredUnitPrice(basePrice, tiers, previousQuantity, window, now);
 }
 
-export function getNextPriceTier(tiers: PriceTier[] | null | undefined, quantity: number, window: TierPricingWindow = {}) {
-  return getActivePriceTiers(tiers, window).find((tier) => tier.minQuantity > quantity) ?? null;
+export function getNextPriceTier(tiers: PriceTier[] | null | undefined, quantity: number, window: TierPricingWindow = {}, now = new Date()) {
+  return getActivePriceTiers(tiers, window, now).find((tier) => tier.minQuantity > quantity) ?? null;
 }
 
-export function calculateTierSavings(basePrice: number, tiers: PriceTier[] | null | undefined, quantity: number, window: TierPricingWindow = {}) {
-  return Math.max(0, basePrice - getTieredUnitPrice(basePrice, tiers, quantity, window)) * quantity;
+export function calculateTierSavings(basePrice: number, tiers: PriceTier[] | null | undefined, quantity: number, window: TierPricingWindow = {}, now = new Date()) {
+  return Math.max(0, basePrice - getTieredUnitPrice(basePrice, tiers, quantity, window, now)) * quantity;
 }
 
-export function getNextTierProgress(tiers: PriceTier[] | null | undefined, quantity: number, window: TierPricingWindow = {}) {
-  const activeTiers = getActivePriceTiers(tiers, window);
+export function getNextTierProgress(tiers: PriceTier[] | null | undefined, quantity: number, window: TierPricingWindow = {}, now = new Date()) {
+  const activeTiers = getActivePriceTiers(tiers, window, now);
   const nextTier = activeTiers.find((tier) => tier.minQuantity > quantity) ?? null;
   if (!nextTier) return { nextTier: null, remainingQuantity: 0, progressPercent: activeTiers.length > 0 ? 100 : 0 };
   const currentTier = [...activeTiers].reverse().find((tier) => tier.minQuantity <= quantity);

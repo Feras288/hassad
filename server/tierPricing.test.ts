@@ -32,10 +32,10 @@ describe("tiered product pricing", () => {
     const expiredWindow = { tierPricingEndsAt: new Date("2026-08-10T23:59:59Z") };
     expect(isTierPricingActive(activeWindow, now)).toBe(true);
     expect(isTierPricingActive(expiredWindow, now)).toBe(false);
-    expect(getTieredUnitPrice(50, tiers, 5, activeWindow)).toBe(45);
-    expect(getTieredUnitPrice(50, tiers, 5, expiredWindow)).toBe(50);
-    expect(getNextPriceTier(tiers, 3, activeWindow)).toEqual({ minQuantity: 5, unitPrice: 45 });
-    expect(getNextTierProgress(tiers, 3, activeWindow)).toMatchObject({ remainingQuantity: 2, progressPercent: 60, nextTier: { minQuantity: 5, unitPrice: 45 } });
+    expect(getTieredUnitPrice(50, tiers, 5, activeWindow, now)).toBe(45);
+    expect(getTieredUnitPrice(50, tiers, 5, expiredWindow, now)).toBe(50);
+    expect(getNextPriceTier(tiers, 3, activeWindow, now)).toEqual({ minQuantity: 5, unitPrice: 45 });
+    expect(getNextTierProgress(tiers, 3, activeWindow, now)).toMatchObject({ remainingQuantity: 2, progressPercent: 60, nextTier: { minQuantity: 5, unitPrice: 45 } });
   });
 
   it("marks a live offer ending within 72 hours and formats its countdown", () => {

@@ -26,6 +26,7 @@ import { notifications } from "@/lib/dashboardData";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useMessages } from "@/contexts/MessagesContext";
 import { useLoyalty } from "@/contexts/LoyaltyContext";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -92,6 +93,16 @@ export default function DashboardSidebar({ collapsed = false, onToggle, mobile =
   const { favoritesCount } = useFavorites();
   const { totalUnread: messagesUnread } = useMessages();
   const { points } = useLoyalty();
+  const { user } = useAuth();
+
+  const displayName = user?.name?.trim() || "مستخدم حصاد";
+  const userInitial = displayName.charAt(0) || "ح";
+  const roleLabel =
+    user?.role === "admin"
+      ? "مدير النظام"
+      : user?.role === "vendor"
+      ? "مورد معتمد"
+      : "مزارع حصاد";
 
   const isActive = (path: string) => {
     if (path === "/dashboard") return location === "/dashboard";
@@ -113,8 +124,8 @@ export default function DashboardSidebar({ collapsed = false, onToggle, mobile =
         </div>
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <div className="font-bold text-lg leading-tight">حصاد</div>
-            <div className="text-xs text-green-300 truncate">لوحة تحكم المزارع</div>
+            <div className="font-bold text-base leading-tight">حصاد</div>
+            <div className="text-xs text-green-300">لوحة تحكم المزارع</div>
           </div>
         )}
         {!mobile && onToggle && (
@@ -143,11 +154,11 @@ export default function DashboardSidebar({ collapsed = false, onToggle, mobile =
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#C9A227] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-              م
+              {userInitial}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-sm truncate">محمد بن سعد الغامدي</div>
-              <div className="text-xs text-green-300 truncate">مزرعة الأمل — الرياض</div>
+              <div className="font-semibold text-sm truncate">{displayName}</div>
+              <div className="text-xs text-green-300 truncate">{roleLabel}</div>
             </div>
             <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" title="متصل" />
           </div>
