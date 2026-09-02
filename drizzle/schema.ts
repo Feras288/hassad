@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   int,
   json,
   mysqlEnum,
@@ -389,7 +390,14 @@ export const catalogProducts = mysqlTable("catalog_products", {
   reviewCount: int("reviewCount").notNull().default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("catalog_products_status_sold_rating_created_at_idx").on(
+    table.status,
+    table.sold,
+    table.rating,
+    table.createdAt
+  ),
+]);
 
 export type CatalogProduct = typeof catalogProducts.$inferSelect;
 export type InsertCatalogProduct = typeof catalogProducts.$inferInsert;
@@ -486,7 +494,13 @@ export const productQuestions = mysqlTable("product_questions", {
   vendorNotifiedAt: timestamp("vendorNotifiedAt"),
   vendorNotificationError: varchar("vendorNotificationError", { length: 500 }),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("product_questions_vendor_id_status_created_at_idx").on(
+    table.vendorId,
+    table.status,
+    table.createdAt
+  ),
+]);
 
 export type ProductQuestion = typeof productQuestions.$inferSelect;
 export type InsertProductQuestion = typeof productQuestions.$inferInsert;
@@ -625,7 +639,16 @@ export const commerceOrders = mysqlTable("commerce_orders", {
   estimatedDelivery: timestamp("estimatedDelivery"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("commerce_orders_customer_id_created_at_idx").on(
+    table.customerId,
+    table.createdAt
+  ),
+  index("commerce_orders_vendor_id_created_at_idx").on(
+    table.vendorId,
+    table.createdAt
+  ),
+]);
 
 export const commerceOrderItems = mysqlTable("commerce_order_items", {
   id: varchar("id", { length: 64 }).primaryKey(),
@@ -638,7 +661,12 @@ export const commerceOrderItems = mysqlTable("commerce_order_items", {
   unitPrice: int("unitPrice").notNull(),
   quantity: int("quantity").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("commerce_order_items_order_id_created_at_idx").on(
+    table.orderId,
+    table.createdAt
+  ),
+]);
 
 export const commerceOrderTrackingEvents = mysqlTable(
   "commerce_order_tracking_events",
@@ -649,7 +677,13 @@ export const commerceOrderTrackingEvents = mysqlTable(
     title: varchar("title", { length: 255 }).notNull(),
     message: text("message").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-  }
+  },
+  (table) => [
+    index("commerce_order_tracking_events_order_id_created_at_idx").on(
+      table.orderId,
+      table.createdAt
+    ),
+  ]
 );
 
 export const customerOrderNotifications = mysqlTable(
