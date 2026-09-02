@@ -19,36 +19,46 @@ import {
 
 /** Public storefront queries: only approved and in-stock catalog entries are returned. */
 export async function listFeaturedCatalogProducts(limit = 4) {
-  const db = await getDb();
-  if (!db) return [];
+  try {
+    const db = await getDb();
+    if (!db) return [];
 
-  return db
-    .select()
-    .from(catalogProducts)
-    .where(eq(catalogProducts.status, "active"))
-    .orderBy(
-      desc(catalogProducts.sold),
-      desc(catalogProducts.rating),
-      desc(catalogProducts.createdAt)
-    )
-    .limit(limit);
+    return await db
+      .select()
+      .from(catalogProducts)
+      .where(eq(catalogProducts.status, "active"))
+      .orderBy(
+        desc(catalogProducts.sold),
+        desc(catalogProducts.rating),
+        desc(catalogProducts.createdAt)
+      )
+      .limit(limit);
+  } catch (error) {
+    console.error("[Database] Error listing featured catalog products:", error);
+    return [];
+  }
 }
 
 /** Public storefront listing: active catalog entries only, without fallback records. */
 export async function listPublicCatalogProducts(limit = 100, offset = 0) {
-  const db = await getDb();
-  if (!db) return [];
-  return db
-    .select()
-    .from(catalogProducts)
-    .where(eq(catalogProducts.status, "active"))
-    .orderBy(
-      desc(catalogProducts.sold),
-      desc(catalogProducts.rating),
-      desc(catalogProducts.createdAt)
-    )
-    .limit(limit)
-    .offset(offset);
+  try {
+    const db = await getDb();
+    if (!db) return [];
+    return await db
+      .select()
+      .from(catalogProducts)
+      .where(eq(catalogProducts.status, "active"))
+      .orderBy(
+        desc(catalogProducts.sold),
+        desc(catalogProducts.rating),
+        desc(catalogProducts.createdAt)
+      )
+      .limit(limit)
+      .offset(offset);
+  } catch (error) {
+    console.error("[Database] Error listing public catalog products:", error);
+    return [];
+  }
 }
 
 /** Lightweight public matching for the header search typeahead. */
