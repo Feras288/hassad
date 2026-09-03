@@ -46,7 +46,7 @@ async function main() {
       \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
       \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       PRIMARY KEY (\`id\`)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
 
   await db.execute(sql`
@@ -54,14 +54,14 @@ async function main() {
       \`id\` varchar(64) NOT NULL,
       \`name\` varchar(160) NOT NULL,
       \`nameEn\` varchar(160) NOT NULL,
-      \`icon\` varchar(32) NOT NULL DEFAULT '🌿',
+      \`icon\` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
       \`color\` varchar(16) NOT NULL DEFAULT '#4CAF50',
       \`description\` text,
       \`active\` boolean NOT NULL DEFAULT true,
       \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
       \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       PRIMARY KEY (\`id\`)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
 
   await db.execute(sql`
@@ -105,7 +105,7 @@ async function main() {
       \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       PRIMARY KEY (\`id\`),
       UNIQUE KEY \`catalog_products_sku_unique\` (\`sku\`)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
 
   const vendorSupplies = {
