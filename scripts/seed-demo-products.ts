@@ -8,6 +8,7 @@
  */
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/mysql2";
+import { sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
   adminVendorProfiles,
@@ -21,6 +22,91 @@ async function main() {
     throw new Error("DATABASE_URL is not set");
   }
   const db = drizzle(process.env.DATABASE_URL);
+
+  // Ensure tables exist in case migrations haven't run on production
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS \`admin_vendor_profiles\` (
+      \`id\` varchar(64) NOT NULL,
+      \`name\` varchar(255) NOT NULL,
+      \`type\` enum('supplier','provider') NOT NULL DEFAULT 'supplier',
+      \`category\` varchar(160) NOT NULL,
+      \`status\` enum('active','inactive','pending','suspended') NOT NULL DEFAULT 'pending',
+      \`verified\` boolean NOT NULL DEFAULT false,
+      \`email\` varchar(320) NOT NULL,
+      \`phone\` varchar(32) NOT NULL,
+      \`location\` varchar(160) NOT NULL,
+      \`logoUrl\` text,
+      \`commission\` int NOT NULL DEFAULT 0,
+      \`description\` text,
+      \`website\` varchar(500),
+      \`crNumber\` varchar(120),
+      \`vatNumber\` varchar(120),
+      \`bankName\` varchar(160),
+      \`bankIban\` varchar(120),
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (\`id\`)
+    );
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS \`catalog_categories\` (
+      \`id\` varchar(64) NOT NULL,
+      \`name\` varchar(160) NOT NULL,
+      \`nameEn\` varchar(160) NOT NULL,
+      \`icon\` varchar(32) NOT NULL DEFAULT '🌿',
+      \`color\` varchar(16) NOT NULL DEFAULT '#4CAF50',
+      \`description\` text,
+      \`active\` boolean NOT NULL DEFAULT true,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (\`id\`)
+    );
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS \`catalog_products\` (
+      \`id\` varchar(64) NOT NULL,
+      \`name\` varchar(255) NOT NULL,
+      \`nameEn\` varchar(255),
+      \`sku\` varchar(120) NOT NULL,
+      \`category\` varchar(120) NOT NULL,
+      \`brand\` varchar(160),
+      \`vendor\` varchar(255) NOT NULL,
+      \`vendorId\` varchar(64) NOT NULL,
+      \`price\` int NOT NULL,
+      \`originalPrice\` int,
+      \`priceTiers\` json,
+      \`tierPricingStartsAt\` timestamp NULL,
+      \`tierPricingEndsAt\` timestamp NULL,
+      \`unit\` varchar(120) NOT NULL,
+      \`minOrder\` int NOT NULL DEFAULT 1,
+      \`stock\` int NOT NULL DEFAULT 0,
+      \`sold\` int NOT NULL DEFAULT 0,
+      \`status\` enum('active','inactive','pending_review','rejected','out_of_stock') NOT NULL DEFAULT 'pending_review',
+      \`images\` json NOT NULL,
+      \`shortDesc\` text,
+      \`longDesc\` text,
+      \`highlights\` json,
+      \`specs\` json,
+      \`usageInstructions\` json,
+      \`certifications\` json,
+      \`tags\` json,
+      \`shortDescEn\` text,
+      \`longDescEn\` text,
+      \`highlightsEn\` json,
+      \`specsEn\` json,
+      \`usageInstructionsEn\` json,
+      \`certificationsEn\` json,
+      \`tagsEn\` json,
+      \`rating\` int NOT NULL DEFAULT 0,
+      \`reviewCount\` int NOT NULL DEFAULT 0,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (\`id\`),
+      UNIQUE KEY \`catalog_products_sku_unique\` (\`sku\`)
+    );
+  `);
 
   const vendorSupplies = {
     id: `vendor_${nanoid(10)}`,
@@ -514,7 +600,10 @@ async function main() {
     },
   ];
 
-  await db.insert(catalogProducts).values(products);
+  await db
+    .insert(catalogProducts)
+    .values(products)
+    .onDuplicateKeyUpdate({ set: { updatedAt: new Date() } });
 
   console.log(
     `Seeded ${products.length} products, 2 vendors, ${categories.length} categories.`
