@@ -96,9 +96,6 @@ async function main() {
       \`longDescEn\` text,
       \`highlightsEn\` json,
       \`specsEn\` json,
-      \`usageInstructionsEn\` json,
-      \`certificationsEn\` json,
-      \`tagsEn\` json,
       \`rating\` int NOT NULL DEFAULT 0,
       \`reviewCount\` int NOT NULL DEFAULT 0,
       \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -107,6 +104,32 @@ async function main() {
       UNIQUE KEY \`catalog_products_sku_unique\` (\`sku\`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
+
+  const columnsToAdd = [
+    { col: "shortDescEn", def: "text NULL" },
+    { col: "longDescEn", def: "text NULL" },
+    { col: "highlightsEn", def: "json NULL" },
+    { col: "specsEn", def: "json NULL" },
+    { col: "usageInstructionsEn", def: "json NULL" },
+    { col: "certificationsEn", def: "json NULL" },
+    { col: "tagsEn", def: "json NULL" },
+    { col: "certifications", def: "json NULL" },
+    { col: "priceTiers", def: "json NULL" },
+    { col: "tierPricingStartsAt", def: "timestamp NULL" },
+    { col: "tierPricingEndsAt", def: "timestamp NULL" },
+  ];
+
+  for (const item of columnsToAdd) {
+    try {
+      await db.execute(
+        sql.raw(`ALTER TABLE \`catalog_products\` ADD COLUMN \`${item.col}\` ${item.def}`)
+      );
+    } catch (err: any) {
+      if (err.code !== "ER_DUP_FIELDNAME" && err.errno !== 1060) {
+        console.warn(`Note on column ${item.col}:`, err.message);
+      }
+    }
+  }
 
   const vendorSupplies = {
     id: `vendor_${nanoid(10)}`,
